@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
 <title>ПОСТ·БОРД — панель детейлинг-студии</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -31,7 +31,7 @@
   --font-mono:'IBM Plex Mono', monospace;
 }
 *{box-sizing:border-box;}
-html,body{margin:0;padding:0;}
+html,body{margin:0;padding:0; touch-action:manipulation; overflow-x:hidden;}
 body{
   background:var(--void);
   background-image:
@@ -1556,9 +1556,22 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+db.enablePersistence().catch(()=>{}); // ignore: unsupported browser or multiple tabs open
 const stateDocRef = db.collection('crm').doc('state');
 
 async function loadState(){
+  // cache-first: paint instantly from the local IndexedDB cache if we have one,
+  // then quietly refresh from the server and re-render if anything changed.
+  try{
+    const cacheSnap = await stateDocRef.get({source:'cache'});
+    if(cacheSnap.exists){
+      const cached = normalizeState(cacheSnap.data());
+      stateDocRef.get({source:'server'}).then(snap=>{
+        if(snap.exists){ state = normalizeState(snap.data()); renderAllScreens(); }
+      }).catch(()=>{});
+      return cached;
+    }
+  }catch(e){}
   const snap = await stateDocRef.get();
   if(snap.exists){
     return normalizeState(snap.data());
@@ -3698,8 +3711,7 @@ document.getElementById('prSave').addEventListener('click', ()=>{
 /* ========================================================================
    INIT / AUTH
    ======================================================================== */
-async function bootApp(){
-  state = await loadState();
+function renderAllScreens(){
   refreshBoard();
   renderClients();
   renderInspectionsList();
@@ -3707,6 +3719,10 @@ async function bootApp(){
   renderIncome();
   renderWarehouse();
   renderPayrollScreen();
+}
+async function bootApp(){
+  state = await loadState();
+  renderAllScreens();
 }
 
 const loginOverlay = document.getElementById('loginOverlay');
