@@ -6,6 +6,9 @@
 <title>ПОСТ·БОРД — панель детейлинг-студии</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <style>
 :root{
   --void:#14161a;
@@ -321,6 +324,11 @@ tbody tr:hover{ background:var(--surface-hover); }
   align-items:center; justify-content:center; z-index:60; padding:20px;
 }
 .modal-overlay.open{ display:flex; }
+#loginOverlay{ position:fixed; inset:0; background:var(--void); display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; }
+#loginOverlay.hidden{ display:none; }
+.hidden{ display:none !important; }
+#loginOverlay .modal{ width:340px; }
+#loginError{ color:#e8685d; font-size:12px; margin-top:10px; min-height:16px; }
 .modal{
   background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:24px;
   width:460px; max-width:100%; max-height:88vh; overflow-y:auto;
@@ -713,6 +721,25 @@ textarea.input{ width:100%; resize:vertical; font-family:inherit; line-height:1.
 </head>
 <body>
 
+<div id="loginOverlay">
+  <div class="modal">
+    <h3>Вход</h3>
+    <div class="field">
+      <label>Email</label>
+      <input class="input" type="email" id="loginEmail" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Пароль</label>
+      <input class="input" type="password" id="loginPassword" autocomplete="current-password">
+    </div>
+    <div id="loginError"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="loginSubmit" style="width:100%;">Войти</button>
+    </div>
+  </div>
+</div>
+
+<div id="appRoot" class="hidden">
 <div class="topbar">
   <div class="brand">
     <div class="brand-mark"></div>
@@ -722,6 +749,7 @@ textarea.input{ width:100%; resize:vertical; font-family:inherit; line-height:1.
     </div>
   </div>
   <div class="topbar-right">
+    <button class="btn btn-ghost" id="logoutBtn" title="Выйти">Выйти</button>
     <button class="burger-btn" id="burgerBtn" aria-label="Меню разделов" title="Меню разделов">☰</button>
   </div>
 </div>
@@ -1444,8 +1472,6 @@ function monthLabel(key){
   return `${names[m-1]} ${String(y).slice(2)}`;
 }
 
-const STORE_KEY = 'postboard_detailing_v1';
-
 function seedData(){
   const t = todayISO();
   const clients = [
@@ -1510,26 +1536,40 @@ function seedData(){
   return {clients, bookings, inspections, expenses, masters, payrollEntries, dismissedReminders};
 }
 
-function loadState(){
-  try{
-    const raw = localStorage.getItem(STORE_KEY);
-    if(raw){
-      const parsed = JSON.parse(raw);
-      if(!parsed.inspections) parsed.inspections = [];
-      if(!parsed.expenses) parsed.expenses = [];
-      if(!parsed.masters) parsed.masters = [];
-      if(!parsed.payrollEntries) parsed.payrollEntries = [];
-      if(!parsed.dismissedReminders) parsed.dismissedReminders = [];
-      return parsed;
-    }
-  }catch(e){}
+function normalizeState(parsed){
+  if(!parsed.inspections) parsed.inspections = [];
+  if(!parsed.expenses) parsed.expenses = [];
+  if(!parsed.masters) parsed.masters = [];
+  if(!parsed.payrollEntries) parsed.payrollEntries = [];
+  if(!parsed.dismissedReminders) parsed.dismissedReminders = [];
+  return parsed;
+}
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBSU6CosVWf6x_pWjSqUvMBY6kpvE0P1xk",
+  authDomain: "ats74-52170.firebaseapp.com",
+  projectId: "ats74-52170",
+  storageBucket: "ats74-52170.firebasestorage.app",
+  messagingSenderId: "165774080196",
+  appId: "1:165774080196:web:48959a63239213468bb191",
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const stateDocRef = db.collection('crm').doc('state');
+
+async function loadState(){
+  const snap = await stateDocRef.get();
+  if(snap.exists){
+    return normalizeState(snap.data());
+  }
   const seeded = seedData();
-  localStorage.setItem(STORE_KEY, JSON.stringify(seeded));
+  await stateDocRef.set(seeded);
   return seeded;
 }
-function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+function saveState(){ stateDocRef.set(state).catch(e=> console.error('saveState failed', e)); }
 
-let state = loadState();
+let state = null;
 let weekStart = todayISO(); // start of visible 14-day range
 let currentInspectionId = null;
 let activeDamageType = 'chip';
@@ -3656,15 +3696,51 @@ document.getElementById('prSave').addEventListener('click', ()=>{
 });
 
 /* ========================================================================
-   INIT
+   INIT / AUTH
    ======================================================================== */
-refreshBoard();
-renderClients();
-renderInspectionsList();
-renderCancelledList();
-renderIncome();
-renderWarehouse();
-renderPayrollScreen();
+async function bootApp(){
+  state = await loadState();
+  refreshBoard();
+  renderClients();
+  renderInspectionsList();
+  renderCancelledList();
+  renderIncome();
+  renderWarehouse();
+  renderPayrollScreen();
+}
+
+const loginOverlay = document.getElementById('loginOverlay');
+const appRoot = document.getElementById('appRoot');
+const loginError = document.getElementById('loginError');
+const loginEmail = document.getElementById('loginEmail');
+const loginPassword = document.getElementById('loginPassword');
+
+function doLogin(){
+  loginError.textContent = '';
+  const email = loginEmail.value.trim();
+  const password = loginPassword.value;
+  if(!email || !password){ loginError.textContent = 'Введите email и пароль'; return; }
+  auth.signInWithEmailAndPassword(email, password).catch(err=>{
+    loginError.textContent = 'Не удалось войти: неверный email или пароль';
+  });
+}
+document.getElementById('loginSubmit').addEventListener('click', doLogin);
+loginPassword.addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+
+document.getElementById('logoutBtn').addEventListener('click', ()=> auth.signOut());
+
+auth.onAuthStateChanged(async user=>{
+  if(user){
+    loginOverlay.classList.add('hidden');
+    appRoot.classList.remove('hidden');
+    loginPassword.value = '';
+    await bootApp();
+  } else {
+    appRoot.classList.add('hidden');
+    loginOverlay.classList.remove('hidden');
+  }
+});
 </script>
+</div>
 </body>
 </html>
