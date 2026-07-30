@@ -1,0 +1,3670 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ПОСТ·БОРД — панель детейлинг-студии</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#14161a;
+  --surface:#1c1f24;
+  --surface-raised:#262a31;
+  --surface-hover:#2e333b;
+  --line:#34383f;
+  --line-soft:#2a2e35;
+  --ice:#7dd8e8;
+  --ice-soft:#b8f0e0;
+  --amber:#e8a23d;
+  --text:#edeff2;
+  --text-muted:#8a8f98;
+  --text-dim:#5c626c;
+  --green:#6fcf97;
+  --danger:#e8685d;
+  --purple:#a78bfa;
+  --font-display:'Big Shoulders Display', sans-serif;
+  --font-body:'Inter', sans-serif;
+  --font-mono:'IBM Plex Mono', monospace;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--void);
+  background-image:
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(125,216,232,.06), transparent),
+    radial-gradient(ellipse 700px 400px at 100% 0%, rgba(232,162,61,.05), transparent);
+  color:var(--text);
+  font-family:var(--font-body);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{ background:rgba(125,216,232,.25); }
+::-webkit-scrollbar{height:10px;width:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px;}
+::-webkit-scrollbar-thumb:hover{background:var(--text-dim);}
+
+a{color:inherit;}
+button{font-family:inherit;}
+
+/* ---------- Header ---------- */
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:18px 28px; border-bottom:1px solid var(--line-soft);
+  background:linear-gradient(180deg, rgba(255,255,255,.02), transparent);
+}
+.brand{ display:flex; align-items:center; gap:14px; }
+.brand-mark{
+  width:38px;height:38px;border-radius:8px;
+  background:conic-gradient(from 210deg, var(--ice), var(--ice-soft), var(--ice));
+  position:relative; flex:none;
+  box-shadow:0 0 0 1px rgba(255,255,255,.08) inset, 0 4px 14px rgba(125,216,232,.25);
+}
+.brand-mark::after{
+  content:"";position:absolute;inset:8px;border-radius:4px;background:var(--void);
+  clip-path:polygon(0 100%, 100% 0, 100% 100%);
+}
+.brand-text .title{
+  font-family:var(--font-display); font-weight:800; font-size:22px; letter-spacing:.5px;
+  line-height:1; text-transform:uppercase;
+}
+.brand-text .sub{
+  font-size:11px; color:var(--text-muted); letter-spacing:.6px; text-transform:uppercase; margin-top:3px;
+}
+.topbar-right{ display:flex; align-items:center; gap:18px; }
+
+/* ---------- Nav ---------- */
+.nav{
+  display:flex; gap:2px; padding:0 24px; border-bottom:1px solid var(--line-soft);
+  overflow-x:auto;
+}
+.nav button{
+  background:none;border:none;color:var(--text-muted);
+  padding:14px 16px; font-size:13px; font-weight:600; letter-spacing:.3px;
+  cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap;
+  text-transform:uppercase; transition:color .15s;
+}
+.nav button:hover{ color:var(--text); }
+.nav button.active{ color:var(--ice); border-bottom-color:var(--ice); }
+.nav button .soon{
+  font-family:var(--font-mono); font-size:9px; color:var(--amber); margin-left:6px;
+  border:1px solid rgba(232,162,61,.4); padding:1px 5px; border-radius:8px; text-transform:none;
+  letter-spacing:0;
+}
+
+.screen{ padding:24px 28px 60px; display:none; }
+.screen.active{ display:block; }
+
+/* ---------- Toolbar ---------- */
+.toolbar{
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  margin-bottom:18px; flex-wrap:wrap;
+}
+.toolbar-left{ display:flex; align-items:center; gap:10px; }
+.btn{
+  font-size:13px; font-weight:600; padding:9px 16px; border-radius:8px; cursor:pointer;
+  border:1px solid var(--line); background:var(--surface-raised); color:var(--text);
+  transition:all .15s; letter-spacing:.2px;
+}
+.btn:hover{ background:var(--surface-hover); border-color:var(--text-dim); }
+.btn-primary{
+  background:linear-gradient(135deg, var(--ice), var(--ice-soft));
+  color:#0d1b1e; border:none; font-weight:700;
+}
+.btn-primary:hover{ filter:brightness(1.08); }
+.btn-ghost{ background:none; border:1px solid var(--line); }
+.btn-icon{ padding:9px 12px; }
+.btn-danger{ color:var(--danger); border-color:rgba(232,104,93,.35); }
+.btn-danger:hover{ background:rgba(232,104,93,.1); border-color:rgba(232,104,93,.6); }
+.btn-cancel-corner{
+  position:absolute; top:18px; right:18px; background:none; cursor:pointer;
+  border:1px solid rgba(232,104,93,.4); color:var(--danger); font-size:11px; font-weight:600;
+  padding:5px 11px; border-radius:20px; letter-spacing:.2px;
+}
+.btn-cancel-corner:hover{ background:rgba(232,104,93,.12); }
+.row-del{
+  background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:15px; padding:4px 8px;
+}
+.row-del:hover{ color:var(--danger); }
+.status-pill.cancelled{ background:rgba(232,104,93,.12); color:var(--danger); border:1px solid rgba(232,104,93,.35); }
+.view-toggle{
+  display:flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; margin-left:6px;
+}
+.view-toggle button{
+  padding:8px 14px; font-size:12px; font-weight:600; background:var(--surface-raised); border:none;
+  color:var(--text-muted); cursor:pointer; letter-spacing:.2px;
+}
+.view-toggle button.active{ background:var(--ice); color:#0d1b1e; }
+.week-label{
+  font-family:var(--font-mono); font-size:13px; color:var(--text-muted); min-width:150px; text-align:center;
+}
+.legend{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+.legend-item{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-muted); }
+.legend-swatch{ width:10px;height:10px;border-radius:3px; }
+
+/* ---------- Board ---------- */
+.board-wrap{
+  border:1px solid var(--line-soft); border-radius:12px; overflow:hidden;
+  background:var(--surface);
+}
+.board-scroll{ overflow-x:auto; }
+.board{ min-width:1180px; }
+.board-header{
+  display:grid; grid-template-columns:170px repeat(14, 1fr);
+  border-bottom:1px solid var(--line-soft);
+  position:sticky; top:0; background:var(--surface); z-index:2;
+}
+.board-header .corner{
+  padding:10px 14px; font-family:var(--font-mono); font-size:10px; color:var(--text-dim);
+  text-transform:uppercase; letter-spacing:.5px; border-right:1px solid var(--line-soft);
+}
+.day-head{
+  padding:8px 4px; text-align:center; border-right:1px solid var(--line-soft);
+  font-family:var(--font-mono);
+}
+.day-head .dow{ font-size:10px; color:var(--text-dim); text-transform:uppercase; }
+.day-head .dnum{ font-size:15px; font-weight:500; }
+.day-head.weekend .dnum{ color:var(--amber); }
+.day-head.today{ background:rgba(125,216,232,.08); }
+.day-head.today .dnum{ color:var(--ice); font-weight:700; }
+
+.post-block{ border-bottom:1px solid var(--line-soft); }
+.post-block:last-child{ border-bottom:none; }
+.post-label-row{
+  display:grid; grid-template-columns:170px 1fr;
+}
+.post-label{
+  padding:10px 14px; border-right:1px solid var(--line-soft);
+  display:flex; flex-direction:column; justify-content:center; gap:2px;
+  background:linear-gradient(180deg, rgba(255,255,255,.015), transparent);
+}
+.post-label .name{ font-weight:700; font-size:13px; letter-spacing:.2px; }
+.post-label .cap{ font-family:var(--font-mono); font-size:10px; color:var(--text-dim); }
+.lanes{ position:relative; }
+.lane{
+  display:grid; grid-template-columns:repeat(14, 1fr);
+  height:52px; border-top:1px solid var(--line-soft); position:relative;
+}
+.lane:first-child{ border-top:none; }
+.cell{
+  border-right:1px solid var(--line-soft); position:relative;
+}
+.cell.weekend{ background:rgba(232,162,61,.03); }
+.cell.today{ background:rgba(125,216,232,.05); }
+.cell.drophover{ background:rgba(125,216,232,.16); }
+
+.booking{
+  position:absolute; top:4px; bottom:4px; left:2px; right:2px;
+  border-radius:6px; padding:4px 8px; cursor:grab; overflow:hidden;
+  font-size:11px; display:flex; flex-direction:column; justify-content:center; gap:1px;
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:0 2px 8px rgba(0,0,0,.35);
+}
+.booking:active{ cursor:grabbing; }
+.booking .b-client{ font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.booking .b-service{ font-family:var(--font-mono); font-size:10px; opacity:.85; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.booking.svc-wash{ background:linear-gradient(135deg,#2b5f66,#1d4247); color:#d8f5f9; }
+.booking.svc-polish{ background:linear-gradient(135deg,#5a4a24,#4a3c1a); color:#f5e6c8; }
+.booking.svc-ceramic{ background:linear-gradient(135deg, rgba(125,216,232,.9), rgba(184,240,224,.9)); color:#0d1b1e; }
+.booking.svc-chem{ background:linear-gradient(135deg,#4a2b57,#3a2145); color:#ecd8f5; }
+.booking.status-done{ opacity:.55; filter:saturate(.6); }
+.booking .b-tag{
+  position:absolute; top:3px; right:5px; font-family:var(--font-mono); font-size:9px;
+}
+
+/* ---------- Clients screen ---------- */
+.search-row{ display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
+.input{
+  background:var(--surface-raised); border:1px solid var(--line); color:var(--text);
+  padding:10px 14px; border-radius:8px; font-size:13px; font-family:inherit;
+}
+.input:focus{ outline:none; border-color:var(--ice); }
+.search-input{ flex:1; min-width:240px; font-family:var(--font-mono); }
+
+.layout-2col{ display:grid; grid-template-columns:1fr 320px; gap:20px; align-items:start; }
+
+.table-wrap{
+  border:1px solid var(--line-soft); border-radius:12px; overflow:hidden; background:var(--surface);
+}
+table{ width:100%; border-collapse:collapse; font-size:13px; }
+thead th{
+  text-align:left; padding:10px 14px; font-size:10px; text-transform:uppercase; letter-spacing:.5px;
+  color:var(--text-dim); border-bottom:1px solid var(--line-soft); font-weight:600;
+}
+tbody td{ padding:11px 14px; border-bottom:1px solid var(--line-soft); }
+tbody tr:last-child td{ border-bottom:none; }
+tbody tr{ cursor:pointer; transition:background .12s; }
+tbody tr:hover{ background:var(--surface-hover); }
+.chip{
+  display:inline-block; font-family:var(--font-mono); font-size:11px; padding:2px 7px;
+  border-radius:5px; background:var(--surface-raised); border:1px solid var(--line); margin:1px 3px 1px 0;
+}
+.ltv{ font-family:var(--font-mono); font-weight:600; color:var(--ice-soft); }
+.model-line{ color:var(--text-dim); font-size:11px; }
+.contact-row{ display:flex; align-items:center; gap:6px; margin-top:4px; flex-wrap:wrap; }
+.phone-link{ font-family:var(--font-mono); font-size:12px; color:var(--ice-soft); text-decoration:none; }
+.phone-link:hover{ text-decoration:underline; }
+.contact-icon{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:22px; height:18px; padding:0 4px; border-radius:5px; font-size:9px; font-weight:700;
+  font-family:var(--font-mono); text-decoration:none; cursor:pointer; border:1px solid var(--line);
+  background:var(--surface-raised); color:var(--text-muted); letter-spacing:.3px;
+}
+.contact-icon.call{ color:var(--ice-soft); border-color:rgba(125,216,232,.35); font-size:12px; }
+.contact-icon.call:hover{ background:rgba(125,216,232,.12); }
+.contact-icon.wa{ color:#6fcf97; border-color:rgba(111,207,151,.4); }
+.contact-icon.wa:hover{ background:rgba(111,207,151,.12); }
+.contact-icon.tg{ color:#7dd8e8; border-color:rgba(125,216,232,.4); }
+.contact-icon.tg:hover{ background:rgba(125,216,232,.12); }
+.contact-icon.copy{ font-size:12px; }
+.contact-icon.copy:hover{ background:var(--surface-hover); color:var(--text); }
+.due-badge{
+  font-size:10px; padding:2px 7px; border-radius:10px; font-weight:600;
+  background:rgba(232,162,61,.12); color:var(--amber); border:1px solid rgba(232,162,61,.35);
+}
+
+.panel{
+  border:1px solid var(--line-soft); border-radius:12px; background:var(--surface); padding:16px;
+}
+.panel h3{
+  font-family:var(--font-display); font-size:16px; text-transform:uppercase; letter-spacing:.4px;
+  margin:0 0 12px; font-weight:700; color:var(--text);
+}
+.reminder-item{
+  padding:10px; border-radius:8px; background:var(--surface-raised); margin-bottom:8px;
+  border:1px solid var(--line-soft);
+}
+.reminder-item .who{ font-weight:600; font-size:13px; }
+.reminder-item .what{ font-size:11px; color:var(--text-muted); margin:3px 0 8px; }
+.reminder-item button.btn{ font-size:11px; padding:5px 10px; flex:none; }
+.reminder-top-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.reminder-phone{ margin-top:4px; }
+.empty-note{ color:var(--text-dim); font-size:12px; font-style:italic; }
+
+/* ---------- Client drawer ---------- */
+.drawer-overlay{
+  position:fixed; inset:0; background:rgba(10,11,13,.6); backdrop-filter:blur(2px);
+  display:none; align-items:stretch; justify-content:flex-end; z-index:50;
+}
+.drawer-overlay.open{ display:flex; }
+.drawer{
+  width:420px; max-width:92vw; background:var(--surface); border-left:1px solid var(--line);
+  padding:24px; overflow-y:auto;
+}
+.drawer-close{
+  float:right; background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer;
+}
+.drawer h2{ font-family:var(--font-display); font-size:24px; margin:0 0 2px; text-transform:uppercase; }
+.drawer .phone{ font-family:var(--font-mono); color:var(--text-muted); font-size:13px; margin-bottom:16px; }
+.stat-row{ display:flex; gap:10px; margin-bottom:18px; }
+.stat-box{
+  flex:1; background:var(--surface-raised); border:1px solid var(--line-soft); border-radius:8px;
+  padding:10px 12px;
+}
+.stat-box .num{ font-family:var(--font-mono); font-size:18px; font-weight:600; color:var(--ice-soft); }
+.stat-box .lbl{ font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.4px; margin-top:2px; }
+.timeline-item{
+  border-left:2px solid var(--line); padding:2px 0 14px 14px; position:relative; margin-left:4px;
+}
+.timeline-item::before{
+  content:""; position:absolute; left:-5px; top:3px; width:8px;height:8px;border-radius:50%;
+  background:var(--ice);
+}
+.timeline-item .date{ font-family:var(--font-mono); font-size:11px; color:var(--text-dim); }
+.timeline-item .svc{ font-size:13px; font-weight:600; margin:2px 0; }
+.timeline-item .price{ font-family:var(--font-mono); font-size:12px; color:var(--green); }
+
+/* ---------- Modal ---------- */
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(10,11,13,.65); display:none;
+  align-items:center; justify-content:center; z-index:60; padding:20px;
+}
+.modal-overlay.open{ display:flex; }
+.modal{
+  background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:24px;
+  width:460px; max-width:100%; max-height:88vh; overflow-y:auto;
+}
+.modal h3{ font-family:var(--font-display); text-transform:uppercase; font-size:19px; margin:0 0 16px; }
+.field{ margin-bottom:14px; }
+.field label{ display:block; font-size:11px; color:var(--text-muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:.4px; }
+.field .input, .field select{ width:100%; }
+select.input{ appearance:none; }
+.field-row{ display:flex; gap:10px; }
+.field-row .field{ flex:1; }
+.modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+.svc-price-hint{ font-family:var(--font-mono); font-size:11px; color:var(--text-dim); margin-top:4px; }
+textarea.input{ width:100%; resize:vertical; font-family:inherit; line-height:1.4; }
+.addons-box{
+  max-height:150px; overflow-y:auto; border:1px solid var(--line); border-radius:8px;
+  padding:8px 12px; display:grid; grid-template-columns:1fr 1fr; gap:5px 10px; background:var(--surface-raised);
+}
+.addon-item{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text); cursor:pointer; }
+.svc-row{ display:flex; gap:8px; margin-bottom:6px; }
+.svc-row select{ flex:1; }
+
+/* ---------- Inspections (Приёмка) ---------- */
+.status-pill{
+  font-size:10px; padding:3px 8px; border-radius:10px; font-weight:600; letter-spacing:.2px;
+}
+.status-pill.draft{ background:rgba(232,162,61,.12); color:var(--amber); border:1px solid rgba(232,162,61,.35); }
+.status-pill.signed{ background:rgba(111,207,151,.12); color:var(--green); border:1px solid rgba(111,207,151,.35); }
+
+.act-header{
+  border:1px solid var(--line-soft); border-radius:12px; background:var(--surface);
+  padding:16px 20px; margin-bottom:18px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px;
+}
+.act-header .who{ font-family:var(--font-display); font-size:20px; text-transform:uppercase; }
+.act-header .meta{ font-family:var(--font-mono); font-size:12px; color:var(--text-muted); margin-top:4px; }
+
+.dmg-toolbar{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+.dmg-btn{
+  display:flex; align-items:center; gap:7px; font-size:12px; padding:7px 12px; border-radius:8px;
+  border:1px solid var(--line); background:var(--surface-raised); color:var(--text); cursor:pointer;
+}
+.dmg-btn .dot{ width:9px;height:9px;border-radius:50%; flex:none; }
+.dmg-btn.active{ border-color:var(--ice); box-shadow:0 0 0 1px var(--ice) inset; }
+
+.car-diagram-wrap{
+  display:flex; justify-content:center; background:var(--void); border-radius:10px; padding:16px;
+  border:1px solid var(--line-soft);
+}
+.car-diagram{ width:100%; max-width:260px; height:auto; cursor:crosshair; }
+.car-outline{ cursor:crosshair; }
+.dmg-marker{ cursor:pointer; }
+.dmg-marker .del{ cursor:pointer; }
+.dmg-marker text.num{ font-family:var(--font-mono); font-size:11px; fill:#0d1b1e; font-weight:700; pointer-events:none; }
+
+.dmg-list{ margin-top:14px; }
+.dmg-item{
+  display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px;
+  background:var(--surface-raised); border:1px solid var(--line-soft); margin-bottom:6px; font-size:12px;
+}
+.dmg-item .dot{ width:10px;height:10px;border-radius:50%;flex:none; }
+.dmg-item .lbl{ flex:1; }
+.dmg-item button{ background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px; }
+.dmg-item button:hover{ color:var(--danger); }
+
+.photo-grid{
+  display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-top:12px;
+}
+.photo-thumb{
+  position:relative; aspect-ratio:1; border-radius:8px; overflow:hidden; border:1px solid var(--line-soft);
+}
+.photo-thumb img{ width:100%; height:100%; object-fit:cover; display:block; cursor:pointer; }
+.photo-thumb .rm{
+  position:absolute; top:3px; right:3px; width:20px; height:20px; border-radius:50%;
+  background:rgba(10,11,13,.7); color:#fff; border:none; font-size:13px; cursor:pointer; line-height:1;
+}
+.photo-empty{ font-size:12px; color:var(--text-dim); font-style:italic; margin-top:8px; }
+
+.sig-canvas{
+  width:100%; height:140px; background:var(--void); border:1px dashed var(--line); border-radius:8px;
+  touch-action:none; display:block;
+}
+
+.lightbox-overlay{
+  position:fixed; inset:0; background:rgba(0,0,0,.85); display:none; align-items:center; justify-content:center;
+  z-index:80; padding:30px;
+}
+.lightbox-overlay.open{ display:flex; }
+.lightbox-overlay img{ max-width:100%; max-height:100%; border-radius:8px; }
+
+@media print{
+  body *{ visibility:hidden; }
+  #screen-inspection-editor, #screen-inspection-editor *{ visibility:visible; }
+  #screen-inspection-editor{ position:absolute; left:0; top:0; width:100%; display:block !important; }
+  .no-print{ display:none !important; }
+  .layout-2col{ grid-template-columns:1fr; }
+}
+
+/* ---------- Stub screens ---------- */
+.stub-card{
+  border:1px solid var(--line-soft); border-radius:14px; padding:28px; background:var(--surface);
+  max-width:640px; position:relative; overflow:hidden;
+}
+.stub-card::before{
+  content:""; position:absolute; top:-40px; right:-40px; width:160px; height:160px; border-radius:50%;
+  background:radial-gradient(circle, rgba(125,216,232,.12), transparent 70%);
+}
+.stub-card .eyebrow{
+  font-family:var(--font-mono); font-size:10px; color:var(--amber); text-transform:uppercase; letter-spacing:.6px;
+}
+.stub-card h2{ font-family:var(--font-display); font-size:26px; text-transform:uppercase; margin:8px 0 12px; }
+.stub-card p{ font-size:13.5px; line-height:1.7; color:var(--text-muted); margin:0 0 14px; }
+.stub-list{ margin:0; padding:0; list-style:none; }
+.stub-list li{
+  font-size:13px; padding:9px 0; border-top:1px solid var(--line-soft); color:var(--text);
+  display:flex; gap:10px;
+}
+.stub-list li:first-child{ border-top:none; }
+.stub-list li .mark{ font-family:var(--font-mono); color:var(--ice); flex:none; }
+
+/* ---------- Warehouse (Склад) ---------- */
+.cat-chip{ display:inline-flex; align-items:center; font-size:11px; padding:3px 9px; border-radius:10px; font-weight:600; letter-spacing:.2px; }
+.cat-chip.rent{ background:rgba(232,162,61,.12); color:var(--amber); border:1px solid rgba(232,162,61,.35); }
+.cat-chip.chem{ background:rgba(125,216,232,.12); color:var(--ice); border:1px solid rgba(125,216,232,.35); }
+.cat-chip.other{ background:rgba(167,139,250,.12); color:var(--purple); border:1px solid rgba(167,139,250,.35); }
+.exp-receipt-thumb{ width:34px; height:34px; border-radius:6px; object-fit:cover; cursor:pointer; border:1px solid var(--line-soft); vertical-align:middle; }
+.chart-bars{
+  display:flex; align-items:flex-end; gap:16px; height:200px; padding:20px 6px 0;
+  border-bottom:1px solid var(--line-soft); overflow-x:auto;
+}
+.chart-bars.chart-bars-donut{
+  height:auto; align-items:center; overflow:visible; padding:32px 6px 24px;
+}
+.chart-bar-col{
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
+  min-width:38px; flex:none; height:100%;
+}
+.chart-bar-total{ font-family:var(--font-mono); font-size:10px; color:var(--text-dim); margin-bottom:4px; white-space:nowrap; }
+.chart-bar-stack{
+  width:28px; display:flex; flex-direction:column-reverse; border-radius:4px 4px 0 0; overflow:hidden;
+  background:var(--surface-raised);
+}
+.chart-seg{ width:100%; }
+.chart-seg.rent{ background:var(--amber); }
+.chart-seg.chem{ background:var(--ice); }
+.chart-seg.other{ background:var(--purple); }
+.chart-bar-label{ font-family:var(--font-mono); font-size:10px; color:var(--text-dim); margin-top:8px; white-space:nowrap; }
+.chart-legend{ display:flex; gap:16px; margin-top:16px; flex-wrap:wrap; }
+.chart-legend-item{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-muted); }
+.chart-legend-swatch{ width:10px; height:10px; border-radius:3px; }
+.chart-legend-swatch.rent{ background:var(--amber); }
+.chart-legend-swatch.chem{ background:var(--ice); }
+.chart-legend-swatch.other{ background:var(--purple); }
+.chart-donut-wrap{ display:flex; align-items:center; justify-content:center; padding:14px 0; width:100%; }
+.chart-donut{
+  width:100%; max-width:340px; aspect-ratio:1/1; border-radius:50%; position:relative;
+  display:flex; align-items:center; justify-content:center; flex:none;
+}
+.chart-donut-center{
+  width:68%; height:68%; border-radius:50%; background:var(--surface);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+  padding:6px;
+}
+.chart-donut-month{
+  font-family:var(--font-display); font-size:20px; font-weight:700; text-transform:uppercase;
+  color:var(--text); letter-spacing:.3px; line-height:1.15;
+}
+.chart-donut-total{ font-family:var(--font-mono); font-size:14px; color:var(--text-muted); margin-top:6px; }
+.chart-empty{ color:var(--text-dim); font-size:12px; font-style:italic; padding:24px 0; }
+
+/* ---------- Payroll (Зарплата) ---------- */
+.master-item{
+  display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border-radius:8px;
+  background:var(--surface-raised); border:1px solid var(--line-soft); margin-bottom:6px; font-size:13px;
+}
+.master-item .row-del{ font-size:14px; }
+
+/* ---------- Mobile month calendar (Планировщик, mobile) ---------- */
+.burger-btn{
+  display:none; background:none; border:1px solid var(--line); color:var(--text);
+  border-radius:8px; padding:8px 11px; font-size:16px; line-height:1; cursor:pointer;
+}
+#legacyBoardToolbar{ display:none; }
+#screen-board .board-wrap{ display:none !important; }
+#screen-board .table-wrap{ display:none !important; }
+#screen-board{ padding-top:14px; }
+
+.mobile-cal-toolbar{ display:none; align-items:center; justify-content:center; gap:18px; margin-bottom:14px; }
+.mobile-cal-toolbar.active{ display:flex; }
+.mobile-month-label{ font-family:var(--font-display); font-size:20px; text-transform:uppercase; letter-spacing:.4px; min-width:140px; text-align:center; }
+.mobile-month-cal{ display:none; }
+.mobile-month-cal.active{ display:block; }
+.mcal-dow-row{ display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:4px; }
+.mcal-dow{ text-align:center; font-family:var(--font-mono); font-size:10px; color:var(--text-dim); text-transform:uppercase; padding:4px 0; }
+.mcal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+.mcal-cell{
+  background:var(--surface); border:1px solid var(--line-soft); border-radius:6px; min-height:62px;
+  padding:4px 3px; display:flex; flex-direction:column; gap:2px; overflow:hidden;
+}
+.mcal-cell.other-month{ opacity:.35; }
+.mcal-daynum{ font-family:var(--font-mono); font-size:11px; color:var(--text-muted); }
+.mcal-cell.today .mcal-daynum{
+  display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px;
+  border-radius:50%; background:var(--amber); color:#2b1c05; font-weight:700;
+}
+.mcal-chips{ display:flex; flex-direction:column; gap:2px; }
+.mcal-chip{
+  font-size:9px; padding:2px 4px; border-radius:4px; white-space:nowrap; overflow:hidden;
+  text-overflow:ellipsis; font-weight:600; cursor:pointer;
+}
+.mcal-chip.svc-wash{ background:#2f80ed; color:#fff; }
+.mcal-chip.svc-polish{ background:var(--amber); color:#2b1c05; }
+.mcal-chip.svc-ceramic{ background:#1fb6c9; color:#062226; }
+.mcal-chip.svc-chem{ background:#c23fc2; color:#fff; }
+.mcal-chip.more{ background:var(--surface-hover); color:var(--text-dim); cursor:default; }
+
+.mobile-view-toggle{
+  display:flex; align-items:stretch; border:1px solid var(--line); border-radius:8px; overflow:hidden;
+  margin-bottom:14px; width:fit-content; height:38px; box-sizing:border-box;
+}
+.mobile-view-toggle button{
+  padding:0 16px; font-size:12px; font-weight:600; background:var(--surface-raised); border:none;
+  color:var(--text-muted); cursor:pointer; letter-spacing:.2px; display:flex; align-items:center;
+}
+.mobile-view-toggle button.active{ background:var(--ice); color:#0d1b1e; }
+#newBookingBtn{ height:38px; box-sizing:border-box; padding:0 18px; display:flex; align-items:center; }
+#boardTopRow{ flex-wrap:nowrap; gap:10px; }
+#boardTopRow .mobile-view-toggle{ flex:0 0 auto; }
+#boardTopRow #newBookingBtn{
+  flex:1 1 auto; min-width:0; max-width:220px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; justify-content:center;
+}
+
+.mobile-list-wrap{ display:none; }
+.mobile-list-wrap.active{ display:block; }
+.mobile-booking-card{
+  display:flex; align-items:flex-start; gap:12px;
+  border:1px solid var(--line-soft); border-radius:12px; background:var(--surface); padding:14px 16px;
+  margin-bottom:10px; cursor:pointer;
+}
+.mobile-booking-card .mb-content{ flex:1; min-width:0; }
+.mobile-booking-card .mb-title{ font-weight:700; font-size:14px; margin-bottom:2px; text-decoration:underline dotted; text-decoration-color:var(--text-dim); text-underline-offset:3px; }
+.mobile-booking-card .mb-datetime{ color:var(--amber); font-weight:700; font-size:13px; margin:4px 0 8px; }
+.mobile-booking-card .mb-client-row{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:4px; flex-wrap:wrap; }
+.mobile-booking-card .mb-client{ font-weight:600; font-size:13px; }
+.mobile-booking-card .mb-phone{ font-family:var(--font-mono); font-size:12px; color:var(--ice-soft); text-decoration:none; }
+.mobile-booking-card .mb-phone:hover{ text-decoration:underline; }
+.mobile-booking-card .mb-price{ font-weight:700; font-size:14px; white-space:nowrap; }
+.mobile-booking-card .mb-service{ color:var(--text-muted); font-size:12px; margin-bottom:8px; }
+.mobile-booking-card .mb-tags{ display:flex; gap:6px; flex-wrap:wrap; }
+.mobile-booking-card .mb-tag{ font-size:10px; padding:2px 7px; border-radius:8px; background:var(--surface-raised); border:1px solid var(--line); color:var(--text-dim); }
+.mobile-booking-card .mb-actions{ flex:0 0 auto; display:flex; flex-direction:column; gap:6px; }
+.mobile-booking-card .mb-actions button, .mobile-booking-card .mb-actions a{
+  width:30px; height:30px; border-radius:8px; border:1px solid var(--line); background:var(--surface-raised);
+  color:var(--text-muted); font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  text-decoration:none; flex:none;
+}
+.mobile-booking-card .mb-actions button:hover, .mobile-booking-card .mb-actions a:hover{ background:var(--surface-hover); color:var(--text); }
+.mobile-booking-card .mb-actions .mb-wa:hover{ color:#6fcf97; }
+.mobile-booking-card .mb-actions .mb-tg:hover{ color:#7dd8e8; }
+.mobile-booking-card .mb-actions .mb-copy:hover{ color:var(--text); }
+
+.mobile-reminders-panel{ display:block; margin-top:20px; }
+.reminder-item{ position:relative; padding-right:42px; }
+.reminder-dismiss{
+  position:absolute; top:8px; right:8px; width:22px; height:22px; border-radius:50%;
+  background:none; border:1px solid rgba(232,104,93,.4); color:var(--danger); font-size:12px;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; padding:0;
+}
+.reminder-dismiss:hover{ background:rgba(232,104,93,.12); }
+.reminder-item .contact-row{ margin:6px 0 10px; gap:10px; }
+.reminder-item .phone-link{ font-size:14px; }
+.reminder-item .contact-icon{ min-width:36px; height:32px; padding:0 10px; font-size:12px; border-radius:8px; }
+.reminder-item .contact-icon.copy{ font-size:16px; }
+.reminder-item .contact-icon.call{ font-size:16px; }
+.reminder-dismiss{ width:28px; height:28px; font-size:14px; }
+
+/* ---------- Mobile record cards (Клиенты / Приёмка / Отменённые / Доходы / Расходы / Зарплата) ---------- */
+.mobile-client-list{ display:none; }
+.client-card{ padding-right:14px; cursor:pointer; }
+.client-card .who{ font-weight:700; font-size:14px; }
+.client-card .model-line{ margin-top:2px; }
+.client-stats-row{
+  display:flex; justify-content:space-between; align-items:center; gap:10px;
+  margin-top:10px; padding-top:8px; border-top:1px solid var(--line-soft);
+  font-size:12px; color:var(--text-muted);
+}
+
+.mobile-record-list{ display:none; }
+.record-card{
+  border:1px solid var(--line-soft); border-radius:12px; background:var(--surface); padding:14px 16px;
+  margin-bottom:10px;
+}
+.record-card .rc-title{ font-weight:700; font-size:14px; margin-bottom:6px; }
+.record-card .rc-row{
+  display:flex; justify-content:space-between; gap:10px; font-size:12px; color:var(--text-muted);
+  padding:5px 0; border-top:1px solid var(--line-soft);
+}
+.record-card .rc-row:first-of-type{ border-top:none; }
+.record-card .rc-row .rc-lbl{ color:var(--text-dim); flex:none; }
+.record-card .rc-row .rc-val{ text-align:right; }
+.record-card .rc-note{ font-size:12px; color:var(--text-muted); margin-top:6px; font-style:italic; }
+.record-card .rc-actions{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.record-card .rc-actions .btn{ font-size:11px; padding:6px 12px; }
+.record-card .rc-photo{ width:40px; height:40px; border-radius:6px; object-fit:cover; border:1px solid var(--line-soft); cursor:pointer; }
+
+/* ---------- Toast ---------- */
+.toast{
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+  background:var(--surface-raised); border:1px solid var(--line); color:var(--text);
+  padding:12px 18px; border-radius:10px; font-size:13px; z-index:100; opacity:0;
+  transition:all .25s; pointer-events:none; box-shadow:0 8px 24px rgba(0,0,0,.4);
+}
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+.toast.danger{ border-color:rgba(232,104,93,.5); color:#ffb4ac; }
+.toast.success{ border-color:rgba(111,207,151,.5); color:#a8e8c0; }
+
+@media (max-width: 860px){
+  .layout-2col{ grid-template-columns:1fr; }
+  .topbar{ flex-wrap:wrap; gap:10px; }
+}
+
+@media (max-width: 760px){
+  .topbar{ flex-wrap:nowrap; }
+  .burger-btn{ display:inline-flex; align-items:center; justify-content:center; }
+
+  .nav{
+    display:none; position:fixed; top:64px; right:14px; z-index:70;
+    flex-direction:column; gap:2px; padding:8px; overflow:visible;
+    background:var(--surface-raised); border:1px solid var(--line); border-radius:12px;
+    box-shadow:0 16px 40px rgba(0,0,0,.5); min-width:220px;
+  }
+  .nav.mobile-open{ display:flex; }
+  .nav button{
+    text-align:left; padding:11px 14px; border-radius:8px; border-bottom:none; text-transform:none; font-size:13px;
+  }
+  .nav button.active{ background:rgba(125,216,232,.12); border-bottom:none; }
+
+  #screen-clients .table-wrap{ display:none !important; }
+  .mobile-client-list{ display:block; }
+
+  #screen-inspections .table-wrap,
+  #screen-cancelled .table-wrap,
+  #screen-income .table-wrap,
+  #screen-warehouse .table-wrap,
+  #screen-payroll .table-wrap{ display:none !important; }
+  .mobile-record-list{ display:block; }
+
+  #expSummaryRow{ flex-direction:column; }
+  #expSummaryRow .stat-box{
+    width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px;
+  }
+  #expSummaryRow .stat-box .lbl{ margin-top:0; white-space:nowrap; }
+  .chart-donut{ max-width:260px; }
+  .chart-donut-month{ font-size:16px; }
+  .chart-donut-total{ font-size:12px; }
+}
+
+@media (min-width: 761px){
+  .mobile-booking-card{ align-items:center; overflow:hidden; }
+  .mobile-booking-card .mb-content{
+    display:flex; align-items:center; flex-wrap:nowrap; gap:16px; min-width:0; overflow:hidden;
+  }
+  .mobile-booking-card .mb-title{
+    margin:0; flex:0 1 200px; min-width:0;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .mobile-booking-card .mb-datetime{
+    margin:0; flex:0 0 auto; white-space:nowrap;
+  }
+  .mobile-booking-card .mb-client-row{
+    margin:0; flex:1 1 220px; min-width:0; flex-wrap:nowrap;
+  }
+  .mobile-booking-card .mb-client-row .mb-client{
+    min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .mobile-booking-card .mb-client-row .mb-price{ flex:0 0 auto; }
+  .mobile-booking-card .mb-service{
+    margin:0; flex:1 1 160px; min-width:0;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .mobile-booking-card .mb-tags{
+    flex:0 1 auto; min-width:0; flex-wrap:nowrap; overflow:hidden;
+  }
+  .mobile-booking-card .mb-actions{
+    flex-direction:row; flex:0 0 auto; gap:6px;
+  }
+}
+:focus-visible{ outline:2px solid var(--ice); outline-offset:2px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark"></div>
+    <div class="brand-text">
+      <div class="title">Пост·Борд</div>
+      <div class="sub">панель детейлинг-студии</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <button class="burger-btn" id="burgerBtn" aria-label="Меню разделов" title="Меню разделов">☰</button>
+  </div>
+</div>
+
+<div class="nav" id="navMenu">
+  <button data-screen="board" class="active">Планировщик</button>
+  <button data-screen="clients">Клиенты</button>
+  <button data-screen="inspections">Приёмка</button>
+  <button data-screen="cancelled">Отменённые записи</button>
+  <button data-screen="income">Доходы</button>
+  <button data-screen="warehouse">Расходы</button>
+  <button data-screen="payroll">Зарплата</button>
+</div>
+
+<!-- ===================== BOARD ===================== -->
+<div class="screen active" id="screen-board">
+  <div class="toolbar" id="legacyBoardToolbar">
+    <div class="toolbar-left">
+      <button class="btn btn-icon" id="prevWeek">←</button>
+      <span class="week-label" id="weekLabel">—</span>
+      <button class="btn btn-icon" id="nextWeek">→</button>
+      <button class="btn btn-ghost" id="todayBtn">Сегодня</button>
+      <div class="view-toggle">
+        <button id="viewCalendarBtn" class="active">Календарь</button>
+        <button id="viewListBtn">Список</button>
+      </div>
+    </div>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-swatch" style="background:linear-gradient(135deg,#2b5f66,#1d4247)"></span>Мойка</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:linear-gradient(135deg,#5a4a24,#4a3c1a)"></span>Полировка/ремонт</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:linear-gradient(135deg,#7dd8e8,#b8f0e0)"></span>Плёнка/комплекс</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:linear-gradient(135deg,#4a2b57,#3a2145)"></span>Химчистка</span>
+    </div>
+  </div>
+
+  <div class="toolbar" id="boardTopRow" style="margin-bottom:14px;">
+    <div class="mobile-view-toggle" style="margin-bottom:0;">
+      <button id="mViewCalendarBtn" class="active">Календарь</button>
+      <button id="mViewListBtn">Список</button>
+    </div>
+    <button class="btn btn-primary" id="newBookingBtn">+ Новая запись</button>
+  </div>
+
+  <div class="mobile-cal-toolbar active" id="mobileCalToolbar">
+    <button class="btn btn-icon" id="mPrevMonth">←</button>
+    <span class="mobile-month-label" id="mMonthLabel">—</span>
+    <button class="btn btn-icon" id="mNextMonth">→</button>
+  </div>
+  <div class="mobile-month-cal active" id="mobileMonthCal"></div>
+
+  <div class="mobile-list-wrap" id="mobileListWrap">
+    <div class="toolbar" style="margin-bottom:14px;">
+      <div class="toolbar-left" style="flex-wrap:wrap;">
+        <select class="input" id="mListPeriodSelect">
+          <option value="7days" selected>Ближайшие 7 дней</option>
+          <option value="month">Текущий месяц</option>
+          <option value="year">Этот год</option>
+          <option value="all">Все записи</option>
+          <option value="custom">Свой период</option>
+        </select>
+        <div class="field-row" id="mListCustomRangeRow" style="display:none;gap:8px;margin:0;">
+          <input class="input" type="date" id="mListFromDate" style="width:150px;">
+          <input class="input" type="date" id="mListToDate" style="width:150px;">
+        </div>
+      </div>
+    </div>
+    <div id="mobileBookingList"></div>
+  </div>
+
+  <div class="panel mobile-reminders-panel">
+    <h3>Напоминания об обслуживании</h3>
+    <div id="mRemindersList"></div>
+  </div>
+
+  <div class="board-wrap" id="boardWrap">
+    <div class="board-scroll">
+      <div class="board" id="boardEl"></div>
+    </div>
+  </div>
+
+  <div class="table-wrap" id="listWrap" style="display:none;">
+    <table>
+      <thead>
+        <tr><th>Дата</th><th>Время</th><th>Клиент</th><th>Авто</th><th>Услуга</th><th>Бокс</th><th>Стоимость</th><th>Статус</th></tr>
+      </thead>
+      <tbody id="bookingListTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===================== CLIENTS ===================== -->
+<div class="screen" id="screen-clients">
+  <div class="search-row">
+    <input class="input search-input" id="clientSearch" placeholder="Поиск по имени, телефону или госномеру...">
+  </div>
+  <div class="layout-2col">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Клиент</th><th>Телефон</th><th>Визитов</th><th>LTV</th><th>Посл. визит</th></tr>
+        </thead>
+        <tbody id="clientsTbody"></tbody>
+      </table>
+    </div>
+    <div class="mobile-client-list" id="clientsMobileList"></div>
+    <div class="panel">
+      <h3>Напоминания об обслуживании</h3>
+      <div id="remindersList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== STUBS ===================== -->
+<div class="screen" id="screen-inspections">
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <span style="color:var(--text-muted);font-size:13px;">Акты электронной приёмки — фото, дефекты на схеме кузова, чек-лист, подпись клиента</span>
+    </div>
+    <button class="btn btn-primary" id="newInspectionBtn">+ Новая приёмка</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Дата</th><th>Клиент</th><th>Авто</th><th>Статус</th><th>Повреждений</th><th>Фото</th><th></th></tr>
+      </thead>
+      <tbody id="inspectionsTbody"></tbody>
+    </table>
+  </div>
+  <div class="mobile-record-list" id="inspectionsMobileList"></div>
+</div>
+
+<div class="screen" id="screen-inspection-editor">
+  <div class="toolbar no-print">
+    <div class="toolbar-left">
+      <button class="btn btn-ghost" id="backToInspections">← К списку приёмок</button>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-ghost btn-danger" id="deleteInspectionBtn">Удалить приёмку</button>
+      <button class="btn btn-ghost" id="printActBtn">Печать акта</button>
+      <button class="btn btn-primary" id="saveInspectionBtn">Сохранить</button>
+    </div>
+  </div>
+
+  <div class="act-header" id="actHeader"></div>
+
+  <div class="layout-2col">
+    <div class="panel">
+      <h3>Схема кузова — отметки повреждений</h3>
+      <div class="dmg-toolbar no-print" id="dmgToolbar"></div>
+      <div class="car-diagram-wrap">
+        <svg id="carSvg" class="car-diagram" viewBox="0 0 300 560" xmlns="http://www.w3.org/2000/svg">
+          <g id="carOutline" class="car-outline">
+            <rect x="60" y="18" width="180" height="524" rx="34" fill="var(--surface-raised)" stroke="var(--line)" stroke-width="2"></rect>
+            <rect x="78" y="70" width="144" height="120" rx="12" fill="none" stroke="var(--line)" stroke-width="1.5"></rect>
+            <rect x="82" y="76" width="136" height="46" rx="6" fill="rgba(125,216,232,.08)" stroke="var(--line)" stroke-width="1"></rect>
+            <rect x="82" y="288" width="136" height="46" rx="6" fill="rgba(125,216,232,.08)" stroke="var(--line)" stroke-width="1"></rect>
+            <line x1="150" y1="70" x2="150" y2="190" stroke="var(--line)" stroke-width="1"></line>
+            <rect x="30" y="70" width="26" height="70" rx="8" fill="var(--void)" stroke="var(--line)" stroke-width="2"></rect>
+            <rect x="244" y="70" width="26" height="70" rx="8" fill="var(--void)" stroke="var(--line)" stroke-width="2"></rect>
+            <rect x="30" y="400" width="26" height="70" rx="8" fill="var(--void)" stroke="var(--line)" stroke-width="2"></rect>
+            <rect x="244" y="400" width="26" height="70" rx="8" fill="var(--void)" stroke="var(--line)" stroke-width="2"></rect>
+            <rect x="66" y="66" width="12" height="26" rx="4" fill="var(--line)"></rect>
+            <rect x="222" y="66" width="12" height="26" rx="4" fill="var(--line)"></rect>
+            <text x="150" y="46" text-anchor="middle" fill="var(--text-dim)" font-size="12" font-family="IBM Plex Mono, monospace">НОС / КАПОТ</text>
+            <text x="150" y="548" text-anchor="middle" fill="var(--text-dim)" font-size="12" font-family="IBM Plex Mono, monospace">КОРМА / БАГАЖНИК</text>
+          </g>
+          <g id="markersLayer"></g>
+        </svg>
+      </div>
+      <div id="dmgList" class="dmg-list"></div>
+    </div>
+
+    <div>
+      <div class="panel" style="margin-bottom:16px;">
+        <h3>Чек-лист состояния</h3>
+        <div class="field">
+          <label>Пробег, км</label>
+          <input class="input" type="number" id="chkMileage" placeholder="128 400">
+        </div>
+        <div class="field">
+          <label>Уровень топлива</label>
+          <select class="input" id="chkFuel">
+            <option value="0">Пусто</option>
+            <option value="25">1/4</option>
+            <option value="50" selected>1/2</option>
+            <option value="75">3/4</option>
+            <option value="100">Полный</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Ценные вещи в салоне</label>
+          <input class="input" id="chkValuables" placeholder="Не обнаружено / указать что именно">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Диск ЛП</label>
+            <select class="input" id="wheelFL"></select>
+          </div>
+          <div class="field">
+            <label>Диск ПП</label>
+            <select class="input" id="wheelFR"></select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Диск ЛЗ</label>
+            <select class="input" id="wheelRL"></select>
+          </div>
+          <div class="field">
+            <label>Диск ПЗ</label>
+            <select class="input" id="wheelRR"></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:16px;">
+        <h3>Фото приёмки</h3>
+        <input type="file" id="photoInput" accept="image/*" capture="environment" multiple style="display:none;">
+        <button class="btn btn-ghost no-print" id="addPhotoBtn">+ Добавить фото</button>
+        <div class="photo-grid" id="photoGrid"></div>
+      </div>
+
+      <div class="panel">
+        <h3>Подпись клиента</h3>
+        <div id="signedNote" class="empty-note" style="display:none;margin-bottom:8px;"></div>
+        <canvas id="sigCanvas" class="sig-canvas" width="380" height="140"></canvas>
+        <div style="display:flex;gap:10px;margin-top:10px;" class="no-print">
+          <button class="btn btn-ghost" id="sigClear">Очистить</button>
+          <button class="btn btn-primary" id="sigConfirm">Подписать акт</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-cancelled">
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <span style="color:var(--text-muted);font-size:13px;">Записи, отменённые из попапа на планировщике — можно восстановить или удалить навсегда</span>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Дата записи</th><th>Время</th><th>Клиент</th><th>Авто</th><th>Услуга</th><th>Бокс</th><th>Стоимость</th><th>Причина</th><th>Действия</th></tr>
+      </thead>
+      <tbody id="cancelledTbody"></tbody>
+    </table>
+  </div>
+  <div class="mobile-record-list" id="cancelledMobileList"></div>
+</div>
+
+<div class="modal-overlay" id="restoreModalOverlay">
+  <div class="modal">
+    <h3>Восстановить запись</h3>
+    <p style="font-size:12px;color:var(--text-muted);margin:-8px 0 16px;">Укажите новую дату и время визита</p>
+    <div class="field-row">
+      <div class="field">
+        <label>Дата</label>
+        <input class="input" type="date" id="rsDate">
+      </div>
+      <div class="field">
+        <label>Время</label>
+        <input class="input" type="time" id="rsTime">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="rsCancel">Отмена</button>
+      <button class="btn btn-primary" id="rsConfirm">Восстановить</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="inspectionModalOverlay">
+  <div class="modal">
+    <h3>Новая приёмка</h3>
+    <div class="field">
+      <label>Клиент</label>
+      <select class="input" id="inClient"></select>
+    </div>
+    <div class="field">
+      <label>Автомобиль</label>
+      <select class="input" id="inCar"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="inCancel">Отмена</button>
+      <button class="btn btn-primary" id="inStart">Начать приёмку</button>
+    </div>
+  </div>
+</div>
+
+<div class="lightbox-overlay" id="lightboxOverlay">
+  <img id="lightboxImg" src="" alt="Фото приёмки">
+</div>
+
+<div class="screen" id="screen-income">
+  <div class="toolbar">
+    <div class="toolbar-left" style="flex-wrap:wrap;">
+      <select class="input" id="incPeriodSelect">
+        <option value="7days" selected>Последние 7 дней</option>
+        <option value="month">Текущий месяц</option>
+        <option value="prevmonth">Прошлый месяц</option>
+        <option value="year">Этот год</option>
+        <option value="all">Всё время</option>
+        <option value="custom">Свой период</option>
+      </select>
+      <div class="field-row" id="incCustomRangeRow" style="display:none;gap:8px;margin:0;">
+        <input class="input" type="date" id="incFromDate" style="width:150px;">
+        <input class="input" type="date" id="incToDate" style="width:150px;">
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:20px;">
+    <h3>Доходы за период</h3>
+    <div class="stat-row" id="incSummaryRow"></div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Дата</th><th>Клиент</th><th>Авто</th><th>Услуги</th><th>Сумма</th></tr>
+      </thead>
+      <tbody id="incomeTbody"></tbody>
+    </table>
+  </div>
+  <div class="mobile-record-list" id="incomeMobileList"></div>
+</div>
+
+<div class="screen" id="screen-warehouse">
+  <div class="toolbar">
+    <div class="toolbar-left" style="flex-wrap:wrap;">
+      <select class="input" id="expPeriodSelect">
+        <option value="month">Текущий месяц</option>
+        <option value="prevmonth">Прошлый месяц</option>
+        <option value="year">Этот год</option>
+        <option value="all">Всё время</option>
+        <option value="custom">Свой период</option>
+      </select>
+      <div class="field-row" id="expCustomRangeRow" style="display:none;gap:8px;margin:0;">
+        <input class="input" type="date" id="expFromDate" style="width:150px;">
+        <input class="input" type="date" id="expToDate" style="width:150px;">
+      </div>
+    </div>
+    <button class="btn btn-primary" id="newExpenseBtn">+ Добавить расход</button>
+  </div>
+
+  <div class="panel" style="margin-bottom:20px;">
+    <h3>Расходы за период</h3>
+    <div class="stat-row" id="expSummaryRow"></div>
+    <div class="chart-bars" id="expChartBars"></div>
+    <div class="chart-legend">
+      <span class="chart-legend-item"><span class="chart-legend-swatch rent"></span>Аренда</span>
+      <span class="chart-legend-item"><span class="chart-legend-swatch chem"></span>Химия</span>
+      <span class="chart-legend-item"><span class="chart-legend-swatch other"></span>Непредвиденные</span>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Дата</th><th>Статья</th><th>Сумма</th><th>Заметка</th><th>Чек</th><th></th></tr>
+      </thead>
+      <tbody id="expensesTbody"></tbody>
+    </table>
+  </div>
+  <div class="mobile-record-list" id="expensesMobileList"></div>
+</div>
+
+<div class="screen" id="screen-payroll">
+  <div class="toolbar">
+    <div class="toolbar-left" style="flex-wrap:wrap;">
+      <select class="input" id="prPeriodSelect">
+        <option value="all" selected>Всё время</option>
+        <option value="month">Текущий месяц</option>
+        <option value="prevmonth">Прошлый месяц</option>
+        <option value="year">Этот год</option>
+        <option value="custom">Свой период</option>
+      </select>
+      <div class="field-row" id="prCustomRangeRow" style="display:none;gap:8px;margin:0;">
+        <input class="input" type="date" id="prFromDate" style="width:150px;">
+        <input class="input" type="date" id="prToDate" style="width:150px;">
+      </div>
+    </div>
+    <button class="btn btn-primary" id="newPayrollBtn">+ Начислить зарплату</button>
+  </div>
+
+  <div class="layout-2col">
+    <div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Дата</th><th>Мастер</th><th>Клиент / Авто</th><th>Услуга</th><th>Сумма</th><th>Зарплата (35%)</th><th></th></tr>
+          </thead>
+          <tbody id="payrollTbody"></tbody>
+        </table>
+      </div>
+      <div class="mobile-record-list" id="payrollMobileList"></div>
+    </div>
+    <div class="panel">
+      <h3>Мастера</h3>
+      <div class="field-row" style="margin-bottom:12px;">
+        <input class="input" id="newMasterName" placeholder="Имя мастера">
+        <button class="btn btn-ghost" id="addMasterBtn" style="flex:none;">+ Добавить</button>
+      </div>
+      <div id="mastersList"></div>
+      <div class="stat-row" id="payrollSummaryRow" style="margin-top:16px;"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="payrollModalOverlay">
+  <div class="modal">
+    <h3>Начисление зарплаты</h3>
+    <div class="field">
+      <label>Мастер</label>
+      <select class="input" id="prMaster"></select>
+    </div>
+    <div class="field">
+      <label>Запись (из календаря)</label>
+      <select class="input" id="prBooking"></select>
+    </div>
+    <div class="field">
+      <label>Услуга</label>
+      <select class="input" id="prService"></select>
+    </div>
+    <div class="field">
+      <label>Сумма за услугу, ₽</label>
+      <input class="input" type="number" id="prAmount" placeholder="0">
+    </div>
+    <div class="field">
+      <label>Зарплата мастера (35%)</label>
+      <input class="input" id="prCommissionPreview" disabled style="opacity:.75;">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="prCancel">Отмена</button>
+      <button class="btn btn-primary" id="prSave">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== NEW BOOKING MODAL ===================== -->
+<div class="modal-overlay" id="bookingModalOverlay">
+  <div class="modal" style="width:540px;">
+    <h3>Новая запись</h3>
+    <div class="field">
+      <label>Клиент</label>
+      <select class="input" id="bkClient"></select>
+    </div>
+    <div class="field-row" id="bkNewNameRow" style="display:none;">
+      <div class="field">
+        <label>Имя нового клиента</label>
+        <input class="input" id="bkNewName" placeholder="Игорь Петров">
+      </div>
+    </div>
+    <div class="field">
+      <label>Телефон клиента</label>
+      <input class="input" id="bkPhone" placeholder="+7 900 000-00-00">
+    </div>
+    <div class="field" id="bkCarField">
+      <label>Автомобиль</label>
+      <select class="input" id="bkCar"></select>
+    </div>
+    <div class="field-row" id="bkNewCarRow" style="display:none;">
+      <div class="field">
+        <label>Госномер</label>
+        <input class="input" id="bkNewPlate" placeholder="А 123 ВС 777">
+      </div>
+      <div class="field">
+        <label>Модель авто</label>
+        <input class="input" id="bkNewModel" placeholder="BMW X5">
+      </div>
+    </div>
+    <div class="field">
+      <label>Услуги</label>
+      <div id="bkServicesList"></div>
+      <button type="button" class="btn btn-ghost" id="bkAddServiceBtn" style="font-size:12px;padding:6px 12px;margin-top:2px;">+ Добавить услугу</button>
+      <div class="svc-price-hint" id="bkSvcHint"></div>
+    </div>
+    <div class="field">
+      <label>Дополнительные услуги</label>
+      <div id="bkAddonsList"></div>
+      <button type="button" class="btn btn-ghost" id="bkAddAddonBtn" style="font-size:12px;padding:6px 12px;margin-top:2px;">+ Добавить дополнительную услугу</button>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Пост</label>
+        <select class="input" id="bkPost"></select>
+      </div>
+      <div class="field">
+        <label>Стоимость, ₽</label>
+        <input class="input" type="number" id="bkPrice" placeholder="Впишите вручную">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Предоплата, ₽</label>
+        <input class="input" type="number" id="bkPrepay" placeholder="0">
+      </div>
+      <div class="field">
+        <label>Время начала</label>
+        <input class="input" type="time" id="bkTime">
+      </div>
+    </div>
+    <div class="field">
+      <label>Дата начала</label>
+      <input class="input" type="date" id="bkDate">
+    </div>
+    <div class="field">
+      <label>Источник</label>
+      <input class="input" id="bkSource" placeholder="Instagram, рекомендация, Авито...">
+    </div>
+    <div class="field">
+      <label>Примечание</label>
+      <textarea class="input" id="bkNotes" rows="2" placeholder="Например: клиент попросил не использовать ароматизатор"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="bkCancel">Отмена</button>
+      <button class="btn btn-primary" id="bkSave">Записать</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== BOOKING DETAIL MODAL ===================== -->
+<div class="modal-overlay" id="bookingDetailOverlay">
+  <div class="modal" style="position:relative;">
+    <button class="btn-cancel-corner" id="bdCancelBooking" title="Отменить запись">Отменить запись</button>
+    <h3>Запись</h3>
+    <div id="bdInfo" style="margin-bottom:14px;"></div>
+    <div class="field">
+      <label>Услуги</label>
+      <div id="bdServicesList"></div>
+      <button type="button" class="btn btn-ghost" id="bdAddServiceBtn" style="font-size:12px;padding:6px 12px;margin-top:2px;">+ Добавить услугу</button>
+      <div class="svc-price-hint" id="bdSvcHint"></div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Дата</label>
+        <input class="input" type="date" id="bdDate">
+      </div>
+      <div class="field">
+        <label>Время начала</label>
+        <input class="input" type="time" id="bdTime">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Стоимость, ₽</label>
+        <input class="input" type="number" id="bdPrice">
+      </div>
+      <div class="field">
+        <label>Предоплата, ₽</label>
+        <input class="input" type="number" id="bdPrepay">
+      </div>
+    </div>
+    <div class="field">
+      <label>Статус</label>
+      <select class="input" id="bdStatus">
+        <option value="scheduled">Запланировано</option>
+        <option value="done">Выполнено</option>
+      </select>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:16px;color:var(--text-muted);">
+      <input type="checkbox" id="bdPaid"> Оплачено
+    </label>
+    <div class="field">
+      <label>Источник</label>
+      <input class="input" id="bdSource" placeholder="Instagram, рекомендация, Авито...">
+    </div>
+    <div class="field">
+      <label>Примечание</label>
+      <textarea class="input" id="bdNotes" rows="2"></textarea>
+    </div>
+    <div id="bdInspectionBox" class="reminder-item" style="margin-bottom:16px;"></div>
+    <div class="modal-actions" style="flex-direction:column;align-items:stretch;gap:10px;">
+      <button class="btn btn-primary" id="bdSave" style="width:100%;">Сохранить</button>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-ghost" id="bdOpenClient" style="flex:1;">Карточка клиента</button>
+        <button class="btn btn-ghost btn-danger" id="bdCancel" style="flex:1;">Закрыть</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== EXPENSE MODAL ===================== -->
+<div class="modal-overlay" id="expenseModalOverlay">
+  <div class="modal">
+    <h3 id="expModalTitle">Новый расход</h3>
+    <div class="field-row">
+      <div class="field">
+        <label>Дата</label>
+        <input class="input" type="date" id="expDate">
+      </div>
+      <div class="field">
+        <label>Статья расходов</label>
+        <select class="input" id="expCategory">
+          <option value="rent">Аренда</option>
+          <option value="chem">Химия</option>
+          <option value="other">Непредвиденные</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Сумма, ₽</label>
+      <input class="input" type="number" id="expAmount" placeholder="0">
+    </div>
+    <div class="field">
+      <label>Заметка</label>
+      <input class="input" id="expNote" placeholder="Например: аренда за июль">
+    </div>
+    <div class="field">
+      <label>Чек / квитанция</label>
+      <input type="file" id="expPhotoInput" accept="image/*" capture="environment" multiple style="display:none;">
+      <button type="button" class="btn btn-ghost" id="expAddPhotoBtn" style="font-size:12px;padding:6px 12px;">+ Добавить фото</button>
+      <div class="photo-grid" id="expPhotoGrid"></div>
+    </div>
+    <div class="modal-actions" style="justify-content:space-between;">
+      <button class="btn btn-ghost btn-danger" id="expDelete" style="display:none;">Удалить расход</button>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-ghost" id="expCancel">Отмена</button>
+        <button class="btn btn-primary" id="expSave">Сохранить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== CLIENT DRAWER ===================== -->
+<div class="drawer-overlay" id="clientDrawerOverlay">
+  <div class="drawer" id="clientDrawer"></div>
+</div>
+
+<div class="toast" id="toastEl"></div>
+
+<script>
+/* ========================================================================
+   DATA MODEL
+   ======================================================================== */
+const POSTS = [
+  {id:'box1', name:'Бокс 1'},
+  {id:'box2', name:'Бокс 2'},
+];
+
+// price on each service is a reference/hint only — the actual booking price is always typed in by hand.
+const SERVICES = [
+  {id:'wash2phase',        name:'Двухфазная мойка кузова', duration:1, price:2500,   cls:'svc-wash'},
+  {id:'detailing-complex', name:'Детейлинг Комплекс',      duration:3, price:55000,  cls:'svc-ceramic'},
+  {id:'body-chem',         name:'Химчистка кузова',        duration:1, price:6000,   cls:'svc-chem'},
+  {id:'engine-wash',       name:'Мойка под капотом',       duration:1, price:2000,   cls:'svc-wash'},
+  {id:'radiator-wash',     name:'Мойка радиатора',         duration:1, price:1500,   cls:'svc-wash'},
+  {id:'body-polish',       name:'Полировка кузова',        duration:2, price:20000,  cls:'svc-polish'},
+  {id:'wash-chem',         name:'Химчистка салона',        duration:1, price:8000,   cls:'svc-chem'},
+  {id:'tinting',           name:'Тонировка',                duration:1, price:7000,   cls:'svc-ceramic'},
+  {id:'armor-wrap',        name:'Оклейка в броню',         duration:3, price:120000, cls:'svc-ceramic'},
+  {id:'wheel-paint',       name:'Покраска дисков',         duration:2, price:15000,  cls:'svc-polish'},
+  {id:'restoration',       name:'Реставрация',              duration:1, price:10000,  cls:'svc-polish'},
+  {id:'reupholstery',      name:'Перешив',                  duration:2, price:35000,  cls:'svc-chem'},
+  {id:'pdr',               name:'PDR',                       duration:1, price:12000,  cls:'svc-polish'},
+  {id:'glass-polish',      name:'Шлифовка стекла',          duration:1, price:6000,   cls:'svc-polish'},
+];
+
+// add-ons don't add calendar time of their own — they're extra line items on the same visit.
+const ADDONS = [
+  {id:'addon-3phase',           name:'3 фаза мойки'},
+  {id:'addon-hardwax',          name:'Твердый воск'},
+  {id:'addon-quartz',           name:'Кварц'},
+  {id:'addon-tar-removal',      name:'Очистка кузова от смолы'},
+  {id:'addon-wheel-chem',       name:'Химчистка колес'},
+  {id:'addon-antirain',         name:'Антидождь'},
+  {id:'addon-winter-pack',      name:'Зимний пакет'},
+  {id:'addon-local-polish',     name:'Локальная полировка'},
+  {id:'addon-plastic-chem',     name:'Химчистка пластика'},
+  {id:'addon-leather-chem',     name:'Химчистка кожи'},
+  {id:'addon-seats-chem',       name:'Химчистка сидений'},
+  {id:'addon-carpet-chem',      name:'Химчистка ковролина'},
+  {id:'addon-trunk-chem',       name:'Химчистка Багажника'},
+  {id:'addon-headlight-wrap',   name:'Оклейка фар'},
+  {id:'addon-risk-wrap',        name:'Оклейка зон риска'},
+  {id:'addon-full-wrap',        name:'Полная оклейка'},
+  {id:'addon-headlight-polish', name:'Шлифовка фар'},
+];
+
+const DAMAGE_TYPES = [
+  {id:'chip',    label:'Скол',      color:'#e8a23d'},
+  {id:'dent',    label:'Вмятина',   color:'#e8685d'},
+  {id:'scratch', label:'Царапина',  color:'#b98af0'},
+  {id:'other',   label:'Другое',    color:'#8a8f98'},
+];
+const WHEEL_OPTIONS = [
+  {v:'ok',     l:'Без замечаний'},
+  {v:'scratch',l:'Царапины'},
+  {v:'curb',   l:'Задир/окол'},
+  {v:'repair', l:'Требует ремонта'},
+];
+
+// Date helpers work entirely in local calendar terms (never via toISOString/UTC),
+// so they give correct results regardless of the browser's timezone offset.
+function fmtISO(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+const todayISO = () => fmtISO(new Date());
+function addDays(iso, n){
+  const [y,m,d] = iso.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  dt.setDate(dt.getDate()+n);
+  return fmtISO(dt);
+}
+function daysBetween(a,b){
+  const [ay,am,ad] = a.split('-').map(Number);
+  const [by,bm,bd] = b.split('-').map(Number);
+  return Math.round((new Date(by,bm-1,bd) - new Date(ay,am-1,ad))/86400000);
+}
+function firstDayOfMonth(y,m){ return fmtISO(new Date(y,m,1)); }
+function lastDayOfMonth(y,m){ return fmtISO(new Date(y,m+1,0)); }
+function firstDayOfMonthISO(iso){
+  const [y,m] = iso.split('-').map(Number);
+  return firstDayOfMonth(y, m-1);
+}
+function monthKey(iso){ return iso.slice(0,7); }
+function monthLabel(key){
+  const [y,m] = key.split('-').map(Number);
+  const names = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+  return `${names[m-1]} ${String(y).slice(2)}`;
+}
+
+const STORE_KEY = 'postboard_detailing_v1';
+
+function seedData(){
+  const t = todayISO();
+  const clients = [
+    {id:'c1', name:'Игорь Соколов', phone:'+79261234567', cars:[{id:'a1', plate:'А777АА777', model:'Mercedes G63'}]},
+    {id:'c2', name:'Марина Levin',  phone:'+79031112233', cars:[{id:'a2', plate:'В001КХ199', model:'BMW X7'}]},
+    {id:'c3', name:'Тимур Ахметов', phone:'+79167654321', cars:[{id:'a3', plate:'М555ОР77',  model:'Porsche Cayenne'}]},
+    {id:'c4', name:'Алексей Гринев',phone:'+79997778899', cars:[{id:'a4', plate:'Т333КК99',  model:'Range Rover Sport'}]},
+    {id:'c5', name:'Ольга Реброва', phone:'+79215556677', cars:[{id:'a5', plate:'Е900НО178', model:'Audi Q8'}]},
+  ];
+  const bookings = [
+    // --- past / done (history, LTV, and demo data for the 4 recurring-service reminders) ---
+    {id:'b1', clientId:'c1', carId:'a1', services:['detailing-complex'], addons:[], postId:'box1', start:addDays(t,-25), startTime:'09:00',
+     price:55000, prepayment:15000, notes:'', status:'done', paid:true}, // due again in ~5 days (1/мес)
+    {id:'b4', clientId:'c4', carId:'a4', services:['wash-chem'], addons:[], postId:'box2', start:addDays(t,-185), startTime:'10:00',
+     price:8000, prepayment:0, notes:'', status:'done', paid:true}, // overdue by ~3 days (раз в 6 мес)
+    {id:'b2', clientId:'c2', carId:'a2', services:['body-polish'], addons:['addon-hardwax'], postId:'box1', start:addDays(t,-355), startTime:'09:30',
+     price:20000, prepayment:0, notes:'', status:'done', paid:true}, // due again in ~10 days (раз в год)
+    {id:'b3', clientId:'c3', carId:'a3', services:['wash-chem'], addons:[], postId:'box2', start:addDays(t,-10), startTime:'11:00',
+     price:8000, prepayment:0, notes:'', status:'done', paid:true},
+    {id:'b5', clientId:'c5', carId:'a5', services:['body-chem'], addons:[], postId:'box1', start:addDays(t,-85), startTime:'08:00',
+     price:6000, prepayment:0, notes:'', status:'done', paid:true}, // due again in ~6 days (раз в 3 мес)
+    // --- upcoming / scheduled — note b6+b10 share box1 on the same day, stacked by time ---
+    {id:'b6', clientId:'c1', carId:'a1', services:['wash2phase'], addons:['addon-antirain'], postId:'box1', start:t, startTime:'09:00',
+     price:3000, prepayment:0, notes:'Клиент просил особое внимание дискам', status:'scheduled', paid:false},
+    {id:'b10', clientId:'c5', carId:'a5', services:['engine-wash'], addons:[], postId:'box1', start:t, startTime:'11:30',
+     price:2000, prepayment:0, notes:'', status:'scheduled', paid:false},
+    {id:'b7', clientId:'c2', carId:'a2', services:['body-polish'], addons:[], postId:'box2', start:addDays(t,1), startTime:'10:00',
+     price:20000, prepayment:5000, notes:'', status:'scheduled', paid:false},
+    {id:'b9', clientId:'c4', carId:'a4', services:['body-chem','wheel-paint'], addons:['addon-wheel-chem'], postId:'box1', start:addDays(t,3), startTime:'09:30',
+     price:21000, prepayment:0, notes:'Есть скол на переднем бампере, уже зафиксирован в приёмке', status:'scheduled', paid:false},
+    {id:'b8', clientId:'c3', carId:'a3', services:['detailing-complex'], addons:[], postId:'box2', start:addDays(t,3), startTime:'08:30',
+     price:55000, prepayment:15000, notes:'Комплекс: мойка + полировка + защита', status:'scheduled', paid:false},
+    {id:'b11', clientId:'c2', carId:'a2', services:['wash2phase'], addons:[], postId:'box2', start:addDays(t,6), startTime:'14:00',
+     price:2500, prepayment:0, notes:'', status:'scheduled', paid:false},
+  ];
+  const inspections = [
+    {id:'i1', clientId:'c3', carId:'a3', bookingId:'b3', date:addDays(t,-10), mileage:41250, fuel:75,
+     valuables:'Солнцезащитные очки в бардачке', wheels:{FL:'ok',FR:'ok',RL:'curb',RR:'ok'},
+     damage:[
+       {id:'d1', type:'chip', x:150, y:95, note:'Скол на капоте, ЛКП'},
+       {id:'d2', type:'scratch', x:210, y:260, note:'Царапина, правая дверь'},
+     ],
+     photos:[], status:'signed', signedAt:addDays(t,-10), signature:null},
+  ];
+  const expenses = [
+    {id:'exp1', date:firstDayOfMonthISO(t), category:'rent', amount:80000, note:'Аренда бокса за текущий месяц', photos:[]},
+    {id:'exp2', date:addDays(t,-6), category:'chem', amount:14500, note:'Химия и расходники — плановая закупка', photos:[]},
+    {id:'exp3', date:addDays(t,-3), category:'other', amount:6200, note:'Ремонт компрессора', photos:[]},
+    {id:'exp4', date:addDays(t,-33), category:'rent', amount:80000, note:'Аренда бокса за прошлый месяц', photos:[]},
+    {id:'exp5', date:addDays(t,-28), category:'chem', amount:9800, note:'', photos:[]},
+    {id:'exp6', date:addDays(t,-95), category:'other', amount:3400, note:'Замена лампы в боксе 2', photos:[]},
+  ];
+  const masters = [
+    {id:'m1', name:'Денис Ковалёв'},
+    {id:'m2', name:'Артём Быков'},
+  ];
+  const payrollEntries = [
+    {id:'pr1', masterId:'m1', bookingId:'b1', serviceId:'detailing-complex', amount:55000, commission:19250},
+    {id:'pr2', masterId:'m2', bookingId:'b3', serviceId:'wash-chem', amount:8000, commission:2800},
+  ];
+  const dismissedReminders = [];
+  return {clients, bookings, inspections, expenses, masters, payrollEntries, dismissedReminders};
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(!parsed.inspections) parsed.inspections = [];
+      if(!parsed.expenses) parsed.expenses = [];
+      if(!parsed.masters) parsed.masters = [];
+      if(!parsed.payrollEntries) parsed.payrollEntries = [];
+      if(!parsed.dismissedReminders) parsed.dismissedReminders = [];
+      return parsed;
+    }
+  }catch(e){}
+  const seeded = seedData();
+  localStorage.setItem(STORE_KEY, JSON.stringify(seeded));
+  return seeded;
+}
+function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+
+let state = loadState();
+let weekStart = todayISO(); // start of visible 14-day range
+let currentInspectionId = null;
+let activeDamageType = 'chip';
+let currentView = 'calendar';
+let sigCanvasEl = null, sigCtx = null, sigDrawing = false, sigHasContent = false;
+
+/* ========================================================================
+   HELPERS
+   ======================================================================== */
+function svc(id){ return SERVICES.find(s=>s.id===id); }
+function post(id){ return POSTS.find(p=>p.id===id); }
+function client(id){ return state.clients.find(c=>c.id===id); }
+function inspection(id){ return state.inspections.find(i=>i.id===id); }
+function inspectionForBooking(bookingId){ return state.inspections.find(i=>i.bookingId===bookingId); }
+function bookingServiceIds(b){
+  return (b.services && b.services.length) ? b.services : (b.serviceId ? [b.serviceId] : []);
+}
+function bookingServiceNames(b){
+  const names = bookingServiceIds(b).map(id=> svc(id)?.name).filter(Boolean);
+  return names.length ? names.join(' + ') : '—';
+}
+function totalDuration(b){
+  const ids = bookingServiceIds(b);
+  const sum = ids.reduce((s,id)=> s + (svc(id)?.duration||1), 0);
+  return Math.max(1, sum);
+}
+function bookingAddonNames(b){
+  return (b.addons||[]).map(id=> ADDONS.find(a=>a.id===id)?.name).filter(Boolean);
+}
+function bookingPrice(b){
+  const v = b.price;
+  if(v !== undefined && v !== null && v !== '') return Number(v);
+  return bookingServiceIds(b).reduce((s,id)=> s + (svc(id)?.price||0), 0);
+}
+function bookingSortKey(b){ return b.start + ' ' + (b.startTime || '00:00'); }
+function carOf(client, carId){ return client && client.cars.find(c=>c.id===carId); }
+function findClientCar(carId){
+  for(const c of state.clients){ const car = c.cars.find(x=>x.id===carId); if(car) return {client:c, car}; }
+  return null;
+}
+function normalize(s){ return (s||'').toLowerCase().replace(/[\s\-\+\(\)]/g,''); }
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function phoneDigits(phone){ return (phone||'').replace(/[^\d]/g,''); }
+function copyToClipboard(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=> showToast('Номер скопирован', 'success')).catch(()=> legacyCopy(text));
+  } else {
+    legacyCopy(text);
+  }
+}
+function legacyCopy(text){
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Номер скопирован', 'success');
+  }catch(e){
+    showToast('Не удалось скопировать номер', 'danger');
+  }
+}
+
+function showToast(msg, type){
+  const el = document.getElementById('toastEl');
+  el.textContent = msg;
+  el.className = 'toast show' + (type ? ' '+type : '');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=> el.classList.remove('show'), 2600);
+}
+
+// A box can serve several short (1-day) visits back-to-back on the same day, ordered by
+// start time — only a multi-day job (duration > 1) claims the box exclusively for its span.
+function canPlace(postId, startDate, duration, excludeId){
+  for(let i=0;i<duration;i++){
+    const day = addDays(startDate, i);
+    const overlapping = state.bookings.filter(b=>
+      b.id!==excludeId && b.postId===postId && b.status!=='cancelled' &&
+      day >= b.start && day < addDays(b.start, totalDuration(b))
+    );
+    if(duration > 1){
+      if(overlapping.length > 0) return {ok:false, day};
+    } else if(overlapping.some(b=> totalDuration(b) > 1)){
+      return {ok:false, day};
+    }
+  }
+  return {ok:true};
+}
+
+/* ---- LTV / reminders ---- */
+function clientStats(c){
+  const bks = state.bookings.filter(b=>b.clientId===c.id);
+  const paid = bks.filter(b=>b.paid && b.status!=='cancelled');
+  const ltv = paid.reduce((sum,b)=> sum + bookingPrice(b), 0);
+  const lastVisit = bks.reduce((max,b)=> !max || b.start > max ? b.start : max, null);
+  return {visits: bks.length, ltv, lastVisit, bookings: bks};
+}
+// Each service on this list gets its own recurring "time to come back" reminder.
+const REMINDER_RULES = [
+  {serviceId:'detailing-complex', intervalDays:30},
+  {serviceId:'body-chem',         intervalDays:91},
+  {serviceId:'body-polish',       intervalDays:365},
+  {serviceId:'wash-chem',         intervalDays:182},
+];
+function reminderKey(clientId, rem){ return `${clientId}|${rem.serviceId}|${rem.dueDate}`; }
+function isReminderDismissed(clientId, rem){ return state.dismissedReminders.includes(reminderKey(clientId, rem)); }
+
+function remindersFor(c){
+  const results = [];
+  REMINDER_RULES.forEach(rule=>{
+    const bks = state.bookings.filter(b=> b.clientId===c.id && b.status==='done' && bookingServiceIds(b).includes(rule.serviceId));
+    if(!bks.length) return;
+    const last = bks.reduce((mx,b)=> b.start>mx.start?b:mx, bks[0]);
+    const dueDate = addDays(last.start, rule.intervalDays);
+    const daysLeft = daysBetween(todayISO(), dueDate);
+    if(daysLeft <= 14){
+      results.push({dueDate, daysLeft, serviceId:rule.serviceId, service: svc(rule.serviceId)?.name || rule.serviceId});
+    }
+  });
+  return results.filter(rem=> !isReminderDismissed(c.id, rem)).sort((a,b)=> a.daysLeft-b.daysLeft);
+}
+function reminderFor(c){
+  return remindersFor(c)[0] || null;
+}
+
+/* ========================================================================
+   NAV
+   ======================================================================== */
+function showScreen(name){
+  document.querySelectorAll('.nav button').forEach(b=> b.classList.toggle('active', b.dataset.screen===name));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById('screen-'+name);
+  if(el) el.classList.add('active');
+  if(name==='clients') renderClients();
+  if(name==='inspections') renderInspectionsList();
+  if(name==='cancelled') renderCancelledList();
+  if(name==='income') renderIncome();
+  if(name==='warehouse') renderWarehouse();
+  if(name==='payroll') renderPayrollScreen();
+  document.getElementById('navMenu').classList.remove('mobile-open');
+}
+document.querySelectorAll('.nav button').forEach(btn=>{
+  btn.addEventListener('click', ()=> showScreen(btn.dataset.screen));
+});
+
+/* ---- mobile burger menu ---- */
+document.getElementById('burgerBtn').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  document.getElementById('navMenu').classList.toggle('mobile-open');
+});
+document.addEventListener('click', (e)=>{
+  const nav = document.getElementById('navMenu');
+  if(nav.classList.contains('mobile-open') && !nav.contains(e.target) && e.target.id!=='burgerBtn'){
+    nav.classList.remove('mobile-open');
+  }
+});
+
+/* ========================================================================
+   BOARD RENDER
+   ======================================================================== */
+const DOW = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+
+function renderBoard(){
+  const boardEl = document.getElementById('boardEl');
+  boardEl.innerHTML = '';
+
+  // header
+  const header = document.createElement('div');
+  header.className = 'board-header';
+  const corner = document.createElement('div');
+  corner.className = 'corner';
+  corner.textContent = 'ПОСТ';
+  header.appendChild(corner);
+  const days = [];
+  for(let i=0;i<14;i++){
+    const iso = addDays(weekStart, i);
+    days.push(iso);
+    const d = new Date(iso+'T00:00:00');
+    const cell = document.createElement('div');
+    cell.className = 'day-head' + (d.getDay()===0||d.getDay()===6?' weekend':'') + (iso===todayISO()?' today':'');
+    cell.innerHTML = `<div class="dow">${DOW[d.getDay()]}</div><div class="dnum">${d.getDate()}</div>`;
+    header.appendChild(cell);
+  }
+  boardEl.appendChild(header);
+
+  const label = document.getElementById('weekLabel');
+  const endLabel = new Date(addDays(weekStart,13)+'T00:00:00');
+  const startLabel = new Date(weekStart+'T00:00:00');
+  label.textContent = `${startLabel.toLocaleDateString('ru-RU',{day:'2-digit',month:'short'})} — ${endLabel.toLocaleDateString('ru-RU',{day:'2-digit',month:'short'})}`;
+
+  POSTS.forEach(p=>{
+    const block = document.createElement('div');
+    block.className = 'post-block';
+
+    const labelRow = document.createElement('div');
+    labelRow.className = 'post-label-row';
+    const lbl = document.createElement('div');
+    lbl.className = 'post-label';
+    lbl.innerHTML = `<div class="name">${p.name}</div>`;
+    labelRow.appendChild(lbl);
+
+    const lanesWrap = document.createElement('div');
+    lanesWrap.className = 'lanes';
+
+    // Assign bookings of this post into lanes greedily. Lanes grow dynamically —
+    // short (1-day) visits on the same day each get their own lane and stack by time;
+    // a multi-day job reserves its lane exclusively for the whole span.
+    const postBookings = state.bookings
+      .filter(b=>b.postId===p.id && b.status!=='cancelled')
+      .sort((a,b)=> bookingSortKey(a).localeCompare(bookingSortKey(b)));
+    const laneEnds = []; // exclusive end-date per lane
+    const placement = {}; // bookingId -> laneIndex
+
+    postBookings.forEach(b=>{
+      const dur = totalDuration(b);
+      const end = addDays(b.start, dur); // exclusive
+      let laneIdx = laneEnds.findIndex(e => e<=b.start);
+      if(laneIdx===-1){ laneIdx = laneEnds.length; laneEnds.push(end); }
+      else { laneEnds[laneIdx] = end; }
+      placement[b.id] = laneIdx;
+    });
+    const laneCount = Math.max(1, laneEnds.length);
+    labelRow.style.height = (laneCount*52)+'px';
+
+    for(let lane=0; lane<laneCount; lane++){
+      const laneEl = document.createElement('div');
+      laneEl.className = 'lane';
+      laneEl.dataset.post = p.id;
+      laneEl.dataset.lane = lane;
+
+      days.forEach((iso, idx)=>{
+        const cellEl = document.createElement('div');
+        const d = new Date(iso+'T00:00:00');
+        cellEl.className = 'cell' + (d.getDay()===0||d.getDay()===6?' weekend':'') + (iso===todayISO()?' today':'');
+        cellEl.dataset.date = iso;
+        cellEl.dataset.post = p.id;
+        cellEl.dataset.lane = lane;
+
+        cellEl.addEventListener('dragover', e=>{ e.preventDefault(); cellEl.classList.add('drophover'); });
+        cellEl.addEventListener('dragleave', ()=> cellEl.classList.remove('drophover'));
+        cellEl.addEventListener('drop', e=>{
+          e.preventDefault();
+          cellEl.classList.remove('drophover');
+          const bookingId = e.dataTransfer.getData('text/plain');
+          moveBooking(bookingId, p.id, iso);
+        });
+
+        laneEl.appendChild(cellEl);
+      });
+      lanesWrap.appendChild(laneEl);
+    }
+
+    // place booking blocks absolutely over the lane grid
+    postBookings.forEach(b=>{
+      const dur = totalDuration(b);
+      const startIdx = daysBetween(weekStart, b.start);
+      if(startIdx + dur <= 0 || startIdx >= 14) return; // outside visible range
+      const clampedStart = Math.max(startIdx, 0);
+      const clampedDur = Math.min(startIdx+dur, 14) - clampedStart;
+      const lane = placement[b.id] || 0;
+
+      const info = findClientCar(b.carId);
+      const firstSvc = svc(bookingServiceIds(b)[0]);
+      const svcNames = bookingServiceNames(b);
+      const el = document.createElement('div');
+      el.className = 'booking ' + (firstSvc?.cls||'svc-wash') + (b.status==='done'?' status-done':'');
+      el.style.position='absolute';
+      el.style.top = (lane*52+4)+'px';
+      el.style.height = '44px';
+      el.style.left = `calc(${clampedStart}/14*100% + 2px)`;
+      el.style.width = `calc(${clampedDur}/14*100% - 4px)`;
+      el.draggable = true;
+      const hasInsp = !!inspectionForBooking(b.id);
+      const timeLabel = b.startTime ? b.startTime+' · ' : '';
+      el.title = `${timeLabel}${info?info.client.name:'?'} · ${svcNames} · ${dur} дн.${hasInsp?' · приёмка оформлена':''}`;
+      el.innerHTML = `<div class="b-client">${info?info.client.name:'—'}</div><div class="b-service">${timeLabel}${svcNames}</div>${hasInsp?'<div class="b-tag" title="Приёмка оформлена">\u{1F4F7}</div>':''}`;
+      el.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/plain', b.id); });
+      el.addEventListener('click', ()=> openBookingDetail(b.id));
+      lanesWrap.appendChild(el);
+    });
+
+    block.appendChild(labelRow);
+    // reposition lanesWrap inside labelRow's second column visually: simpler to append lanesWrap as sibling spanning col2
+    labelRow.appendChild(lanesWrap);
+    lanesWrap.style.position='relative';
+    boardEl.appendChild(block);
+  });
+}
+
+function refreshBoard(){
+  renderBoard();
+  if(currentView==='list') renderBookingList();
+  renderMobileMonthCal();
+  if(mobileView==='list') renderMobileBookingList();
+  renderReminders();
+}
+
+/* ========================================================================
+   MOBILE MONTH CALENDAR (Планировщик, узкие экраны)
+   ======================================================================== */
+let mobileMonthCursor = new Date();
+const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const MCAL_DOW = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+
+function renderMobileMonthCal(){
+  const y = mobileMonthCursor.getFullYear(), m = mobileMonthCursor.getMonth();
+  document.getElementById('mMonthLabel').textContent = MONTH_NAMES[m];
+
+  const first = new Date(y, m, 1);
+  const startDow = (first.getDay()+6)%7; // Monday=0 ... Sunday=6
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const prevDaysInMonth = new Date(y, m, 0).getDate();
+
+  const cells = [];
+  for(let i=startDow-1;i>=0;i--){
+    cells.push({day: prevDaysInMonth-i, other:true, iso: fmtISO(new Date(y, m-1, prevDaysInMonth-i))});
+  }
+  for(let d=1; d<=daysInMonth; d++){
+    cells.push({day:d, other:false, iso: fmtISO(new Date(y,m,d))});
+  }
+  let trail = 1;
+  while(cells.length % 7 !== 0){
+    cells.push({day:trail, other:true, iso: fmtISO(new Date(y,m+1,trail))});
+    trail++;
+  }
+
+  const byDay = {};
+  state.bookings.forEach(b=>{
+    if(b.status==='cancelled') return;
+    const dur = totalDuration(b);
+    for(let i=0;i<dur;i++){
+      const iso = addDays(b.start, i);
+      (byDay[iso] = byDay[iso]||[]).push(b);
+    }
+  });
+
+  const today = todayISO();
+  const maxShow = 3;
+  let html = '<div class="mcal-dow-row">' + MCAL_DOW.map(d=>`<div class="mcal-dow">${d}</div>`).join('') + '</div>';
+  html += '<div class="mcal-grid">';
+  cells.forEach(c=>{
+    const dayBookings = byDay[c.iso] || [];
+    const shown = dayBookings.slice(0, maxShow);
+    const overflow = dayBookings.length - maxShow;
+    const chips = shown.map(b=>{
+      const firstSvc = svc(bookingServiceIds(b)[0]);
+      const cls = firstSvc ? firstSvc.cls : 'svc-wash';
+      const name = firstSvc ? firstSvc.name : bookingServiceNames(b);
+      return `<div class="mcal-chip ${cls}" data-booking-id="${b.id}" title="${escapeHtml(name)}">${escapeHtml(name)}</div>`;
+    }).join('') + (overflow>0 ? `<div class="mcal-chip more">+${overflow}</div>` : '');
+    html += `<div class="mcal-cell ${c.other?'other-month':''} ${c.iso===today?'today':''}">
+      <div class="mcal-daynum">${c.day}</div>
+      <div class="mcal-chips">${chips}</div>
+    </div>`;
+  });
+  html += '</div>';
+  document.getElementById('mobileMonthCal').innerHTML = html;
+
+  document.querySelectorAll('#mobileMonthCal .mcal-chip[data-booking-id]').forEach(chip=>{
+    chip.addEventListener('click', ()=> openBookingDetail(chip.dataset.bookingId));
+  });
+}
+document.getElementById('mPrevMonth').addEventListener('click', ()=>{
+  mobileMonthCursor = new Date(mobileMonthCursor.getFullYear(), mobileMonthCursor.getMonth()-1, 1);
+  renderMobileMonthCal();
+});
+document.getElementById('mNextMonth').addEventListener('click', ()=>{
+  mobileMonthCursor = new Date(mobileMonthCursor.getFullYear(), mobileMonthCursor.getMonth()+1, 1);
+  renderMobileMonthCal();
+});
+
+/* ---- mobile Календарь/Список toggle ---- */
+let mobileView = 'calendar';
+function setMobileView(v){
+  mobileView = v;
+  document.getElementById('mViewCalendarBtn').classList.toggle('active', v==='calendar');
+  document.getElementById('mViewListBtn').classList.toggle('active', v==='list');
+  document.getElementById('mobileCalToolbar').classList.toggle('active', v==='calendar');
+  document.getElementById('mobileMonthCal').classList.toggle('active', v==='calendar');
+  document.getElementById('mobileListWrap').classList.toggle('active', v==='list');
+  if(v==='list') renderMobileBookingList();
+}
+document.getElementById('mViewCalendarBtn').addEventListener('click', ()=> setMobileView('calendar'));
+document.getElementById('mViewListBtn').addEventListener('click', ()=> setMobileView('list'));
+
+/* ---- mobile booking list (period-based) ---- */
+const MCAL_DOW_LOWER = ['вс','пн','вт','ср','чт','пт','сб'];
+
+function getMobileListPeriodRange(){
+  const type = document.getElementById('mListPeriodSelect').value;
+  const now = new Date();
+  if(type==='7days'){
+    return {from: todayISO(), to: addDays(todayISO(), 6)};
+  }
+  if(type==='month'){
+    return {from:firstDayOfMonth(now.getFullYear(), now.getMonth()), to:lastDayOfMonth(now.getFullYear(), now.getMonth())};
+  }
+  if(type==='year'){
+    return {from:`${now.getFullYear()}-01-01`, to:`${now.getFullYear()}-12-31`};
+  }
+  if(type==='all'){
+    const dates = state.bookings.map(b=>b.start).sort();
+    return {from: dates.length ? dates[0] : todayISO(), to: dates.length ? dates[dates.length-1] : todayISO()};
+  }
+  const from = document.getElementById('mListFromDate').value || todayISO();
+  const to = document.getElementById('mListToDate').value || todayISO();
+  return {from, to};
+}
+
+function renderMobileBookingList(){
+  const {from, to} = getMobileListPeriodRange();
+  const rows = state.bookings
+    .filter(b=> b.status!=='cancelled' && b.start>=from && b.start<=to)
+    .sort((a,b)=> bookingSortKey(a).localeCompare(bookingSortKey(b)));
+
+  const wrap = document.getElementById('mobileBookingList');
+  wrap.innerHTML = rows.map(b=>{
+    const info = findClientCar(b.carId);
+    const d = new Date(b.start+'T00:00:00');
+    const digits = phoneDigits(info ? info.client.phone : '');
+    const paidTag = b.paid
+      ? `<span class="mb-tag" style="color:var(--green);border-color:rgba(111,207,151,.35);">Оплачено</span>`
+      : `<span class="mb-tag">Не оплачено</span>`;
+    return `<div class="mobile-booking-card" data-id="${b.id}">
+      <div class="mb-content">
+        <div class="mb-title">${info ? escapeHtml(info.car.model+' · '+info.car.plate) : '—'}</div>
+        <div class="mb-datetime">${d.toLocaleDateString('ru-RU')} (${MCAL_DOW_LOWER[d.getDay()]}) ${b.startTime||''}</div>
+        <div class="mb-client-row">
+          <span class="mb-client">${info ? escapeHtml(info.client.name) : '—'} · <a href="tel:+${digits}" class="mb-phone" data-stop>${info ? escapeHtml(info.client.phone) : ''}</a></span>
+          <span class="mb-price">${Number(bookingPrice(b)||0).toLocaleString('ru-RU')} ₽</span>
+        </div>
+        <div class="mb-service">${bookingServiceNames(b)}</div>
+        <div class="mb-tags">
+          <span class="mb-tag">${escapeHtml(post(b.postId).name)}</span>
+          ${b.source ? `<span class="mb-tag">${escapeHtml(b.source)}</span>` : ''}
+          ${paidTag}
+        </div>
+      </div>
+      <div class="mb-actions">
+        <button class="mb-edit" data-edit="${b.id}" title="Открыть запись" data-stop>✎</button>
+        <a href="https://wa.me/${digits}" target="_blank" rel="noopener" class="mb-wa" title="Написать в WhatsApp" data-stop>WA</a>
+        <a href="https://t.me/+${digits}" target="_blank" rel="noopener" class="mb-tg" title="Написать в Telegram" data-stop>TG</a>
+        <button class="mb-copy" data-copy-phone="${info ? escapeHtml(info.client.phone) : ''}" title="Скопировать номер" data-stop>⧉</button>
+      </div>
+    </div>`;
+  }).join('') || `<div class="empty-note">За выбранный период записей нет</div>`;
+
+  wrap.querySelectorAll('.mobile-booking-card').forEach(card=>{
+    card.addEventListener('click', (e)=>{
+      if(e.target.closest('[data-stop]')) return;
+      openBookingDetail(card.dataset.id);
+    });
+  });
+  wrap.querySelectorAll('[data-edit]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{ e.stopPropagation(); openBookingDetail(btn.dataset.edit); });
+  });
+  wrap.querySelectorAll('[data-copy-phone]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{ e.stopPropagation(); copyToClipboard(btn.dataset.copyPhone); });
+  });
+  wrap.querySelectorAll('a.mb-phone, a.mb-wa, a.mb-tg').forEach(a=>{
+    a.addEventListener('click', (e)=> e.stopPropagation());
+  });
+}
+document.getElementById('mListPeriodSelect').addEventListener('change', ()=>{
+  document.getElementById('mListCustomRangeRow').style.display = document.getElementById('mListPeriodSelect').value==='custom' ? 'flex' : 'none';
+  renderMobileBookingList();
+});
+document.getElementById('mListFromDate').addEventListener('change', renderMobileBookingList);
+document.getElementById('mListToDate').addEventListener('change', renderMobileBookingList);
+
+function setView(v){
+  currentView = v;
+  document.getElementById('viewCalendarBtn').classList.toggle('active', v==='calendar');
+  document.getElementById('viewListBtn').classList.toggle('active', v==='list');
+  document.getElementById('boardWrap').style.display = v==='calendar' ? 'block' : 'none';
+  document.getElementById('listWrap').style.display = v==='list' ? 'block' : 'none';
+  if(v==='list') renderBookingList();
+}
+document.getElementById('viewCalendarBtn').addEventListener('click', ()=> setView('calendar'));
+document.getElementById('viewListBtn').addEventListener('click', ()=> setView('list'));
+
+function renderBookingList(){
+  const tbody = document.getElementById('bookingListTbody');
+  const days = [];
+  for(let i=0;i<14;i++) days.push(addDays(weekStart,i));
+  const rows = state.bookings
+    .filter(b=> b.status!=='cancelled' && days.includes(b.start))
+    .sort((a,b)=> bookingSortKey(a).localeCompare(bookingSortKey(b)));
+  tbody.innerHTML = rows.map(b=>{
+    const info = findClientCar(b.carId);
+    return `<tr data-id="${b.id}">
+      <td>${new Date(b.start+'T00:00:00').toLocaleDateString('ru-RU')}</td>
+      <td style="font-family:var(--font-mono);">${b.startTime||'—'}</td>
+      <td>${info?info.client.name:'—'}</td>
+      <td>${info?info.car.model+' · '+info.car.plate:'—'}</td>
+      <td>${bookingServiceNames(b)}</td>
+      <td>${post(b.postId).name}</td>
+      <td class="ltv">${bookingPrice(b).toLocaleString('ru-RU')} ₽</td>
+      <td><span class="status-pill ${b.status==='done'?'signed':'draft'}">${b.status==='done'?'Выполнено':'Запланировано'}</span></td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="8"><span class="empty-note">На эти даты записей нет</span></td></tr>`;
+  tbody.querySelectorAll('tr[data-id]').forEach(tr=> tr.addEventListener('click', ()=> openBookingDetail(tr.dataset.id)));
+}
+
+function moveBooking(bookingId, newPostId, newStartIso){
+  const b = state.bookings.find(x=>x.id===bookingId);
+  if(!b) return;
+  const dur = totalDuration(b);
+  const check = canPlace(newPostId, newStartIso, dur, b.id);
+  if(!check.ok){
+    showToast(`Пост занят на ${new Date(check.day+'T00:00:00').toLocaleDateString('ru-RU')} — выберите другой день`, 'danger');
+    refreshBoard();
+    return;
+  }
+  b.postId = newPostId;
+  b.start = newStartIso;
+  saveState();
+  refreshBoard();
+  showToast('Запись перенесена', 'success');
+}
+
+document.getElementById('prevWeek').addEventListener('click', ()=>{ weekStart = addDays(weekStart,-7); refreshBoard(); });
+document.getElementById('nextWeek').addEventListener('click', ()=>{ weekStart = addDays(weekStart,7); refreshBoard(); });
+document.getElementById('todayBtn').addEventListener('click', ()=>{ weekStart = todayISO(); refreshBoard(); });
+
+/* ========================================================================
+   NEW BOOKING MODAL
+   ======================================================================== */
+const bkModal = document.getElementById('bookingModalOverlay');
+document.getElementById('newBookingBtn').addEventListener('click', ()=> openBookingModal());
+document.getElementById('bkCancel').addEventListener('click', ()=> bkModal.classList.remove('open'));
+
+/* ---- shrink "+ Новая запись" down to just "+" when there isn't room for the label ---- */
+const NEW_BOOKING_LABEL_FULL = '+ Новая запись';
+const NEW_BOOKING_LABEL_SHORT = '+';
+function updateNewBookingBtnLabel(){
+  const btn = document.getElementById('newBookingBtn');
+  if(!btn) return;
+  btn.textContent = NEW_BOOKING_LABEL_FULL;
+  if(btn.scrollWidth > btn.clientWidth + 1){
+    btn.textContent = NEW_BOOKING_LABEL_SHORT;
+  }
+}
+if(typeof ResizeObserver !== 'undefined'){
+  const boardTopRowEl = document.getElementById('boardTopRow');
+  if(boardTopRowEl){
+    new ResizeObserver(()=> updateNewBookingBtnLabel()).observe(boardTopRowEl);
+  }
+}
+window.addEventListener('resize', updateNewBookingBtnLabel);
+updateNewBookingBtnLabel();
+
+function fillBookingClientOptions(){
+  const sel = document.getElementById('bkClient');
+  sel.innerHTML = state.clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')
+    + `<option value="__new__">+ Новый клиент</option>`;
+}
+function onBkClientChange(){
+  const val = document.getElementById('bkClient').value;
+  const isNew = val === '__new__';
+  document.getElementById('bkNewNameRow').style.display = isNew ? 'flex' : 'none';
+  document.getElementById('bkCarField').style.display = isNew ? 'none' : 'block';
+  document.getElementById('bkNewCarRow').style.display = isNew ? 'flex' : 'none';
+  if(isNew){
+    document.getElementById('bkPhone').value = '';
+    document.getElementById('bkNewName').value = '';
+    document.getElementById('bkNewPlate').value = '';
+    document.getElementById('bkNewModel').value = '';
+  } else {
+    const c = client(val);
+    document.getElementById('bkPhone').value = c ? c.phone : '';
+    fillBookingCarOptions();
+  }
+}
+function fillBookingCarOptions(){
+  const clientId = document.getElementById('bkClient').value;
+  const c = client(clientId);
+  const sel = document.getElementById('bkCar');
+  sel.innerHTML = (c?c.cars:[]).map(car=>`<option value="${car.id}">${car.model} · ${car.plate}</option>`).join('')
+    + `<option value="__newcar__">+ Новая машина клиента</option>`;
+  document.getElementById('bkNewCarRow').style.display = 'none';
+}
+document.getElementById('bkCar').addEventListener('change', ()=>{
+  const clientVal = document.getElementById('bkClient').value;
+  if(clientVal === '__new__') return; // new-car row already shown for new-client flow
+  const isNewCar = document.getElementById('bkCar').value === '__newcar__';
+  document.getElementById('bkNewCarRow').style.display = isNewCar ? 'flex' : 'none';
+  if(isNewCar){
+    document.getElementById('bkNewPlate').value = '';
+    document.getElementById('bkNewModel').value = '';
+  }
+});
+function fillPostOptions(){
+  const sel = document.getElementById('bkPost');
+  sel.innerHTML = POSTS.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+}
+
+/* ---- multiple services on one booking ---- */
+function getSelectedServiceIds(){
+  return [...document.querySelectorAll('.bk-svc-select')].map(s=>s.value);
+}
+function renderServiceRows(selectedIds){
+  const list = document.getElementById('bkServicesList');
+  const ids = (selectedIds && selectedIds.length) ? selectedIds : [SERVICES[0].id];
+  list.innerHTML = ids.map((id,idx)=>`
+    <div class="svc-row">
+      <select class="input bk-svc-select" data-idx="${idx}">
+        ${SERVICES.map(s=>`<option value="${s.id}" ${s.id===id?'selected':''}>${s.name}</option>`).join('')}
+      </select>
+      ${ids.length>1 ? `<button type="button" class="row-del bk-svc-remove" data-idx="${idx}" title="Убрать услугу">✕</button>` : ''}
+    </div>
+  `).join('');
+  list.querySelectorAll('.bk-svc-select').forEach(sel=> sel.addEventListener('change', updateBkServiceHint));
+  list.querySelectorAll('.bk-svc-remove').forEach(btn=> btn.addEventListener('click', ()=>{
+    const current = getSelectedServiceIds();
+    current.splice(Number(btn.dataset.idx),1);
+    renderServiceRows(current);
+  }));
+  updateBkServiceHint();
+}
+function updateBkServiceHint(){
+  const ids = getSelectedServiceIds();
+  const totalDur = ids.reduce((s,id)=> s+(svc(id)?.duration||1),0) || 1;
+  const refPrice = ids.reduce((s,id)=> s+(svc(id)?.price||0),0);
+  document.getElementById('bkSvcHint').textContent = `${totalDur} ${totalDur===1?'день':'дня'} · ориентировочно ${refPrice.toLocaleString('ru-RU')} ₽ — стоимость впишите вручную ниже`;
+}
+document.getElementById('bkAddServiceBtn').addEventListener('click', ()=>{
+  const current = getSelectedServiceIds();
+  current.push(SERVICES[0].id);
+  renderServiceRows(current);
+});
+
+/* ---- additional services (Дополнительные услуги) ---- */
+function getSelectedAddonIds(){
+  return [...document.querySelectorAll('.bk-addon-select')].map(s=>s.value);
+}
+function renderAddonRows(selectedIds){
+  const list = document.getElementById('bkAddonsList');
+  const ids = selectedIds || [];
+  list.innerHTML = ids.map((id,idx)=>`
+    <div class="svc-row">
+      <select class="input bk-addon-select" data-idx="${idx}">
+        ${ADDONS.map(a=>`<option value="${a.id}" ${a.id===id?'selected':''}>${a.name}</option>`).join('')}
+      </select>
+      <button type="button" class="row-del bk-addon-remove" data-idx="${idx}" title="Убрать">✕</button>
+    </div>
+  `).join('') || `<div class="empty-note" style="margin:2px 0 4px;">Не выбрано</div>`;
+  list.querySelectorAll('.bk-addon-remove').forEach(btn=> btn.addEventListener('click', ()=>{
+    const current = getSelectedAddonIds();
+    current.splice(Number(btn.dataset.idx),1);
+    renderAddonRows(current);
+  }));
+}
+document.getElementById('bkAddAddonBtn').addEventListener('click', ()=>{
+  const current = getSelectedAddonIds();
+  current.push(ADDONS[0].id);
+  renderAddonRows(current);
+});
+
+document.getElementById('bkClient').addEventListener('change', onBkClientChange);
+
+function openBookingModal(prefillClientId, prefillServiceId){
+  fillBookingClientOptions();
+  fillPostOptions();
+  renderServiceRows(prefillServiceId ? [prefillServiceId] : undefined);
+  renderAddonRows();
+  if(prefillClientId) document.getElementById('bkClient').value = prefillClientId;
+  onBkClientChange();
+  document.getElementById('bkDate').value = todayISO();
+  document.getElementById('bkTime').value = '09:00';
+  document.getElementById('bkPrice').value = '';
+  document.getElementById('bkPrepay').value = '';
+  document.getElementById('bkSource').value = '';
+  document.getElementById('bkNotes').value = '';
+  bkModal.classList.add('open');
+}
+
+document.getElementById('bkSave').addEventListener('click', ()=>{
+  const clientSel = document.getElementById('bkClient').value;
+  const phone = document.getElementById('bkPhone').value.trim();
+  const serviceIds = getSelectedServiceIds();
+  const addonIds = getSelectedAddonIds();
+  const postId = document.getElementById('bkPost').value;
+  const start = document.getElementById('bkDate').value;
+  const startTime = document.getElementById('bkTime').value || '09:00';
+  const priceInput = document.getElementById('bkPrice').value;
+  const prepayInput = document.getElementById('bkPrepay').value;
+  const source = document.getElementById('bkSource').value.trim();
+  const notes = document.getElementById('bkNotes').value.trim();
+  let clientId, carId;
+
+  if(!serviceIds.length){ showToast('Выберите хотя бы одну услугу', 'danger'); return; }
+
+  if(clientSel === '__new__'){
+    const name = document.getElementById('bkNewName').value.trim();
+    const plate = document.getElementById('bkNewPlate').value.trim();
+    const model = document.getElementById('bkNewModel').value.trim();
+    if(!name || !phone || !plate){ showToast('Укажите имя, телефон и госномер нового клиента', 'danger'); return; }
+    const newCarId = 'a'+Date.now();
+    const newClient = {id:'c'+Date.now(), name, phone, cars:[{id:newCarId, plate, model: model||'—'}]};
+    state.clients.push(newClient);
+    clientId = newClient.id;
+    carId = newCarId;
+  } else {
+    clientId = clientSel;
+    const c = client(clientId);
+    if(!clientId){ showToast('Заполните все поля', 'danger'); return; }
+    const carSel = document.getElementById('bkCar').value;
+    if(carSel === '__newcar__'){
+      const plate = document.getElementById('bkNewPlate').value.trim();
+      const model = document.getElementById('bkNewModel').value.trim();
+      if(!plate){ showToast('Укажите госномер новой машины', 'danger'); return; }
+      const newCar = {id:'a'+Date.now(), plate, model: model||'—'};
+      c.cars.push(newCar);
+      carId = newCar.id;
+    } else {
+      carId = carSel;
+      if(!carId){ showToast('Заполните все поля', 'danger'); return; }
+    }
+    if(c && phone && phone !== c.phone) c.phone = phone;
+  }
+
+  if(!start){ showToast('Укажите дату', 'danger'); return; }
+
+  const duration = serviceIds.reduce((s,id)=> s+(svc(id)?.duration||1),0) || 1;
+  const check = canPlace(postId, start, duration, null);
+  if(!check.ok){
+    showToast(`Пост «${post(postId).name}» занят на ${new Date(check.day+'T00:00:00').toLocaleDateString('ru-RU')}`, 'danger');
+    return;
+  }
+  state.bookings.push({
+    id:'b'+Date.now(), clientId, carId,
+    services: serviceIds, addons: addonIds,
+    postId, start, startTime,
+    price: priceInput!=='' ? Number(priceInput) : 0,
+    prepayment: prepayInput!=='' ? Number(prepayInput) : 0,
+    source,
+    notes,
+    status:'scheduled', paid:false
+  });
+  saveState();
+  bkModal.classList.remove('open');
+  refreshBoard();
+  renderClients();
+  showToast('Запись добавлена', 'success');
+});
+
+/* ========================================================================
+   BOOKING DETAIL (Запись — клик по блоку на доске)
+   ======================================================================== */
+let currentBookingDetailId = null;
+const bdOverlay = document.getElementById('bookingDetailOverlay');
+
+/* ---- editable service list inside the booking-detail popup ---- */
+function getBdSelectedServiceIds(){
+  return [...document.querySelectorAll('.bd-svc-select')].map(s=>s.value);
+}
+function renderBdServiceRows(selectedIds){
+  const list = document.getElementById('bdServicesList');
+  const ids = (selectedIds && selectedIds.length) ? selectedIds : [SERVICES[0].id];
+  list.innerHTML = ids.map((id,idx)=>`
+    <div class="svc-row">
+      <select class="input bd-svc-select" data-idx="${idx}">
+        ${SERVICES.map(s=>`<option value="${s.id}" ${s.id===id?'selected':''}>${s.name}</option>`).join('')}
+      </select>
+      ${ids.length>1 ? `<button type="button" class="row-del bd-svc-remove" data-idx="${idx}" title="Убрать услугу">✕</button>` : ''}
+    </div>
+  `).join('');
+  list.querySelectorAll('.bd-svc-select').forEach(sel=> sel.addEventListener('change', updateBdServiceHint));
+  list.querySelectorAll('.bd-svc-remove').forEach(btn=> btn.addEventListener('click', ()=>{
+    const current = getBdSelectedServiceIds();
+    current.splice(Number(btn.dataset.idx),1);
+    renderBdServiceRows(current);
+    updateBdServiceHint();
+  }));
+  updateBdServiceHint();
+}
+function updateBdServiceHint(){
+  const ids = getBdSelectedServiceIds();
+  const totalDur = ids.reduce((s,id)=> s+(svc(id)?.duration||1),0) || 1;
+  document.getElementById('bdSvcHint').textContent = `${totalDur} ${totalDur===1?'день':'дня'} суммарно`;
+}
+document.getElementById('bdAddServiceBtn').addEventListener('click', ()=>{
+  const current = getBdSelectedServiceIds();
+  current.push(SERVICES[0].id);
+  renderBdServiceRows(current);
+});
+
+function openBookingDetail(bookingId){
+  const b = state.bookings.find(x=>x.id===bookingId);
+  if(!b) return;
+  currentBookingDetailId = bookingId;
+  const info = findClientCar(b.carId);
+  const addonNames = bookingAddonNames(b);
+
+  document.getElementById('bdInfo').innerHTML = `
+    <div style="font-family:var(--font-display);font-size:20px;text-transform:uppercase;">${info?info.client.name:'—'}</div>
+    <div style="color:var(--text-muted);font-family:var(--font-mono);font-size:12px;margin-top:2px;">
+      ${info?info.car.model+' · '+info.car.plate:''} · пост «${post(b.postId).name}» · ${new Date(b.start+'T00:00:00').toLocaleDateString('ru-RU')} ${b.startTime||''}
+    </div>
+    ${addonNames.length ? `<div style="color:var(--text-dim);font-size:11px;margin-top:4px;">Дополнительные услуги: ${addonNames.join(', ')}</div>` : ''}
+    ${b.cancelReason ? `<div style="color:var(--danger);font-size:11px;margin-top:4px;">Причина отмены: ${escapeHtml(b.cancelReason)}</div>` : ''}
+  `;
+  renderBdServiceRows(bookingServiceIds(b));
+  document.getElementById('bdPrice').value = bookingPrice(b);
+  document.getElementById('bdPrepay').value = b.prepayment || '';
+  document.getElementById('bdDate').value = b.start;
+  document.getElementById('bdTime').value = b.startTime || '09:00';
+  document.getElementById('bdStatus').value = b.status==='done' ? 'done' : 'scheduled';
+  document.getElementById('bdPaid').checked = !!b.paid;
+  document.getElementById('bdSource').value = b.source || '';
+  document.getElementById('bdNotes').value = b.notes || '';
+
+  const insp = inspectionForBooking(b.id);
+  const box = document.getElementById('bdInspectionBox');
+  if(insp){
+    box.innerHTML = `
+      <div class="who">\u{1F4F7} Приёмка оформлена</div>
+      <div class="what">Статус: ${insp.status==='signed'?'подписан клиентом':'черновик'} · ${insp.damage.length} отметок · ${insp.photos.length} фото</div>
+      <button class="btn btn-ghost" id="bdOpenInspection">Открыть приёмку</button>
+    `;
+    document.getElementById('bdOpenInspection').addEventListener('click', ()=>{
+      bdOverlay.classList.remove('open');
+      showScreen('inspections');
+      openInspectionEditor(insp.id);
+    });
+  } else {
+    box.innerHTML = `
+      <div class="who">Приёмка не оформлена</div>
+      <div class="what">Фото, чек-лист и схема повреждений для этого авто ещё не заполнены</div>
+      <button class="btn btn-primary" id="bdMakeInspection">Оформить приёмку</button>
+    `;
+    document.getElementById('bdMakeInspection').addEventListener('click', ()=>{
+      const newInsp = {id:'i'+Date.now(), clientId:b.clientId, carId:b.carId, bookingId:b.id, date:todayISO(),
+        mileage:'', fuel:50, valuables:'', wheels:{FL:'ok',FR:'ok',RL:'ok',RR:'ok'},
+        damage:[], photos:[], status:'draft', signedAt:null, signature:null};
+      state.inspections.push(newInsp);
+      saveState();
+      bdOverlay.classList.remove('open');
+      showScreen('inspections');
+      openInspectionEditor(newInsp.id);
+    });
+  }
+
+  bdOverlay.classList.add('open');
+}
+document.getElementById('bdCancel').addEventListener('click', ()=> bdOverlay.classList.remove('open'));
+document.getElementById('bdOpenClient').addEventListener('click', ()=>{
+  const b = state.bookings.find(x=>x.id===currentBookingDetailId);
+  if(!b) return;
+  bdOverlay.classList.remove('open');
+  showScreen('clients');
+  openClientDrawer(b.clientId);
+});
+document.getElementById('bdSave').addEventListener('click', ()=>{
+  const b = state.bookings.find(x=>x.id===currentBookingDetailId);
+  if(!b) return;
+  const newServices = getBdSelectedServiceIds();
+  if(!newServices.length){ showToast('Выберите хотя бы одну услугу', 'danger'); return; }
+  const newDuration = newServices.reduce((s,id)=> s+(svc(id)?.duration||1),0) || 1;
+  const newDate = document.getElementById('bdDate').value;
+  if(!newDate){ showToast('Укажите дату записи', 'danger'); return; }
+  const check = canPlace(b.postId, newDate, newDuration, b.id);
+  if(!check.ok){
+    showToast(`С такими услугами пост «${post(b.postId).name}» занят на ${new Date(check.day+'T00:00:00').toLocaleDateString('ru-RU')} — выберите другую дату`, 'danger');
+    return;
+  }
+  b.services = newServices;
+  b.start = newDate;
+  b.price = Number(document.getElementById('bdPrice').value) || 0;
+  b.prepayment = Number(document.getElementById('bdPrepay').value) || 0;
+  b.startTime = document.getElementById('bdTime').value || b.startTime || '09:00';
+  b.status = document.getElementById('bdStatus').value;
+  b.paid = document.getElementById('bdPaid').checked;
+  b.source = document.getElementById('bdSource').value.trim();
+  b.notes = document.getElementById('bdNotes').value.trim();
+  saveState();
+  bdOverlay.classList.remove('open');
+  refreshBoard();
+  renderClients();
+  showToast('Запись обновлена', 'success');
+});
+function cancelBookingWithReason(bookingId){
+  const b = state.bookings.find(x=>x.id===bookingId);
+  if(!b) return false;
+  const reason = prompt('Укажите причину отмены записи:');
+  if(reason===null) return false; // staff backed out of the prompt
+  if(!reason.trim()){ showToast('Причина отмены обязательна', 'danger'); return false; }
+  b.status = 'cancelled';
+  b.cancelReason = reason.trim();
+  b.paid = false; // cancelled bookings never count towards LTV
+  saveState();
+  refreshBoard();
+  renderClients();
+  renderCancelledList();
+  showToast('Запись отменена', 'success');
+  return true;
+}
+document.getElementById('bdCancelBooking').addEventListener('click', ()=>{
+  if(!currentBookingDetailId) return;
+  if(cancelBookingWithReason(currentBookingDetailId)) bdOverlay.classList.remove('open');
+});
+bdOverlay.addEventListener('click', e=>{ if(e.target===bdOverlay) bdOverlay.classList.remove('open'); });
+
+/* ========================================================================
+   CANCELLED BOOKINGS (Отменённые записи)
+   ======================================================================== */
+function renderCancelledList(){
+  const tbody = document.getElementById('cancelledTbody');
+  const rows = state.bookings.filter(b=>b.status==='cancelled').sort((a,b)=> bookingSortKey(b).localeCompare(bookingSortKey(a)));
+  tbody.innerHTML = rows.map(b=>{
+    const info = findClientCar(b.carId);
+    return `<tr>
+      <td>${new Date(b.start+'T00:00:00').toLocaleDateString('ru-RU')}</td>
+      <td style="font-family:var(--font-mono);">${b.startTime||'—'}</td>
+      <td>${info?info.client.name:'—'}</td>
+      <td>${info?info.car.model+' · '+info.car.plate:'—'}</td>
+      <td>${bookingServiceNames(b)}</td>
+      <td>${post(b.postId).name}</td>
+      <td class="ltv">${bookingPrice(b).toLocaleString('ru-RU')} ₽</td>
+      <td style="max-width:160px;font-size:12px;color:var(--text-muted);">${b.cancelReason?escapeHtml(b.cancelReason):'—'}</td>
+      <td style="display:flex;gap:6px;">
+        <button class="btn btn-ghost" data-restore="${b.id}" style="font-size:11px;padding:5px 10px;">Восстановить</button>
+        <button class="row-del" data-del-booking="${b.id}" title="Удалить навсегда">✕</button>
+      </td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="9"><span class="empty-note">Отменённых записей пока нет</span></td></tr>`;
+
+  tbody.querySelectorAll('button[data-restore]').forEach(btn=> btn.addEventListener('click', ()=> openRestoreModal(btn.dataset.restore)));
+  tbody.querySelectorAll('button[data-del-booking]').forEach(btn=> btn.addEventListener('click', ()=>{
+    if(!confirm('Удалить эту запись навсегда?')) return;
+    state.bookings = state.bookings.filter(x=>x.id!==btn.dataset.delBooking);
+    saveState();
+    renderCancelledList();
+    showToast('Запись удалена', 'success');
+  }));
+
+  const mobileList = document.getElementById('cancelledMobileList');
+  mobileList.innerHTML = rows.map(b=>{
+    const info = findClientCar(b.carId);
+    return `<div class="record-card">
+      <div class="rc-title">${info?escapeHtml(info.client.name):'—'}</div>
+      <div class="rc-row"><span class="rc-lbl">Дата</span><span class="rc-val">${new Date(b.start+'T00:00:00').toLocaleDateString('ru-RU')} ${b.startTime||''}</span></div>
+      <div class="rc-row"><span class="rc-lbl">Авто</span><span class="rc-val">${info?escapeHtml(info.car.model+' · '+info.car.plate):'—'}</span></div>
+      <div class="rc-row"><span class="rc-lbl">Услуга</span><span class="rc-val">${bookingServiceNames(b)}</span></div>
+      <div class="rc-row"><span class="rc-lbl">Бокс</span><span class="rc-val">${escapeHtml(post(b.postId).name)}</span></div>
+      <div class="rc-row"><span class="rc-lbl">Стоимость</span><span class="rc-val ltv">${bookingPrice(b).toLocaleString('ru-RU')} ₽</span></div>
+      ${b.cancelReason ? `<div class="rc-note">Причина: ${escapeHtml(b.cancelReason)}</div>` : ''}
+      <div class="rc-actions">
+        <button class="btn btn-ghost" data-restore="${b.id}">Восстановить</button>
+        <button class="btn btn-ghost btn-danger" data-del-booking="${b.id}">Удалить навсегда</button>
+      </div>
+    </div>`;
+  }).join('') || `<div class="empty-note">Отменённых записей пока нет</div>`;
+  mobileList.querySelectorAll('button[data-restore]').forEach(btn=> btn.addEventListener('click', ()=> openRestoreModal(btn.dataset.restore)));
+  mobileList.querySelectorAll('button[data-del-booking]').forEach(btn=> btn.addEventListener('click', ()=>{
+    if(!confirm('Удалить эту запись навсегда?')) return;
+    state.bookings = state.bookings.filter(x=>x.id!==btn.dataset.delBooking);
+    saveState();
+    renderCancelledList();
+    showToast('Запись удалена', 'success');
+  }));
+}
+
+let restoreBookingId = null;
+const restoreModal = document.getElementById('restoreModalOverlay');
+function openRestoreModal(bookingId){
+  const b = state.bookings.find(x=>x.id===bookingId);
+  if(!b) return;
+  restoreBookingId = bookingId;
+  document.getElementById('rsDate').value = todayISO();
+  document.getElementById('rsTime').value = b.startTime || '09:00';
+  restoreModal.classList.add('open');
+}
+document.getElementById('rsCancel').addEventListener('click', ()=> restoreModal.classList.remove('open'));
+document.getElementById('rsConfirm').addEventListener('click', ()=>{
+  const b = state.bookings.find(x=>x.id===restoreBookingId);
+  if(!b) return;
+  const newDate = document.getElementById('rsDate').value;
+  const newTime = document.getElementById('rsTime').value || '09:00';
+  if(!newDate){ showToast('Укажите дату', 'danger'); return; }
+  const dur = totalDuration(b);
+  const check = canPlace(b.postId, newDate, dur, b.id);
+  if(!check.ok){
+    showToast(`Пост «${post(b.postId).name}» занят на ${new Date(check.day+'T00:00:00').toLocaleDateString('ru-RU')} — выберите другую дату`, 'danger');
+    return;
+  }
+  b.status = 'scheduled';
+  b.start = newDate;
+  b.startTime = newTime;
+  b.cancelReason = null;
+  saveState();
+  restoreModal.classList.remove('open');
+  renderCancelledList();
+  refreshBoard();
+  showToast('Запись восстановлена', 'success');
+});
+restoreModal.addEventListener('click', e=>{ if(e.target===restoreModal) restoreModal.classList.remove('open'); });
+
+/* ========================================================================
+   CLIENTS SCREEN
+   ======================================================================== */
+function renderClients(filter){
+  const tbody = document.getElementById('clientsTbody');
+  const q = normalize(filter||document.getElementById('clientSearch').value);
+  const rows = state.clients.filter(c=>{
+    if(!q) return true;
+    if(normalize(c.name).includes(q)) return true;
+    if(normalize(c.phone).includes(q)) return true;
+    return c.cars.some(car=> normalize(car.plate).includes(q));
+  });
+
+  tbody.innerHTML = rows.map(c=>{
+    const stats = clientStats(c);
+    const modelsText = c.cars.map(car=>`${car.model} · ${car.plate}`).join(', ') || '—';
+    const digits = phoneDigits(c.phone);
+    return `<tr data-id="${c.id}">
+      <td>
+        <strong>${escapeHtml(c.name)}</strong><br>
+        <span class="model-line">${escapeHtml(modelsText)}</span>
+      </td>
+      <td>
+        <div class="contact-row">
+          <a href="tel:+${digits}" class="phone-link" data-stop>${escapeHtml(c.phone)}</a>
+          <a href="https://wa.me/${digits}" target="_blank" rel="noopener" class="contact-icon wa" title="Написать в WhatsApp" data-stop>WA</a>
+          <a href="https://t.me/+${digits}" target="_blank" rel="noopener" class="contact-icon tg" title="Написать в Telegram" data-stop>TG</a>
+          <button type="button" class="contact-icon copy" data-copy-phone="${escapeHtml(c.phone)}" title="Скопировать номер" data-stop>⧉</button>
+        </div>
+      </td>
+      <td>${stats.visits}</td>
+      <td class="ltv">${stats.ltv.toLocaleString('ru-RU')} ₽</td>
+      <td>${stats.lastVisit ? new Date(stats.lastVisit+'T00:00:00').toLocaleDateString('ru-RU') : '—'}</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="5"><span class="empty-note">Ничего не найдено</span></td></tr>`;
+
+  tbody.querySelectorAll('tr[data-id]').forEach(tr=>{
+    tr.addEventListener('click', ()=> openClientDrawer(tr.dataset.id));
+  });
+  tbody.querySelectorAll('[data-stop]').forEach(el=>{
+    el.addEventListener('click', e=> e.stopPropagation());
+  });
+  tbody.querySelectorAll('button[data-copy-phone]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      copyToClipboard(btn.dataset.copyPhone);
+    });
+  });
+
+  const mobileList = document.getElementById('clientsMobileList');
+  mobileList.innerHTML = rows.map(c=>{
+    const stats = clientStats(c);
+    const modelsText = c.cars.map(car=>`${car.model} · ${car.plate}`).join(', ') || '—';
+    const digits = phoneDigits(c.phone);
+    return `<div class="reminder-item client-card" data-id="${c.id}">
+      <div class="who">${escapeHtml(c.name)}</div>
+      <div class="model-line">${escapeHtml(modelsText)}</div>
+      <div class="reminder-phone"><a href="tel:+${digits}" class="phone-link" data-stop>${escapeHtml(c.phone)}</a></div>
+      <div class="contact-row">
+        <a href="tel:+${digits}" class="contact-icon call" title="Позвонить" data-stop>📞</a>
+        <a href="https://wa.me/${digits}" target="_blank" rel="noopener" class="contact-icon wa" title="Написать в WhatsApp" data-stop>WA</a>
+        <a href="https://t.me/+${digits}" target="_blank" rel="noopener" class="contact-icon tg" title="Написать в Telegram" data-stop>TG</a>
+        <button type="button" class="contact-icon copy" data-copy-phone="${escapeHtml(c.phone)}" title="Скопировать номер" data-stop>⧉</button>
+      </div>
+      <div class="client-stats-row">
+        <span>${stats.visits} визитов</span>
+        <span class="ltv">${stats.ltv.toLocaleString('ru-RU')} ₽ LTV</span>
+      </div>
+    </div>`;
+  }).join('') || `<div class="empty-note">Ничего не найдено</div>`;
+
+  mobileList.querySelectorAll('.client-card').forEach(card=>{
+    card.addEventListener('click', (e)=>{
+      if(e.target.closest('[data-stop]')) return;
+      openClientDrawer(card.dataset.id);
+    });
+  });
+  mobileList.querySelectorAll('button[data-copy-phone]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{ e.stopPropagation(); copyToClipboard(btn.dataset.copyPhone); });
+  });
+
+  renderReminders();
+}
+document.getElementById('clientSearch').addEventListener('input', e=> renderClients(e.target.value));
+
+function renderReminders(){
+  const items = [];
+  state.clients.forEach(c=> remindersFor(c).forEach(rem=> items.push({c, rem})));
+  items.sort((a,b)=> a.rem.daysLeft - b.rem.daysLeft);
+  const html = items.map(({c,rem})=>{
+    const digits = phoneDigits(c.phone);
+    const key = reminderKey(c.id, rem);
+    return `
+    <div class="reminder-item">
+      <button class="reminder-dismiss" data-dismiss-key="${key}" title="Скрыть напоминание">✕</button>
+      <div class="reminder-top-row">
+        <div class="who">${escapeHtml(c.name)}</div>
+        <button class="btn btn-ghost" data-client="${c.id}" data-service="${rem.serviceId}">Записать</button>
+      </div>
+      <div class="reminder-phone"><a href="tel:+${digits}" class="phone-link" data-stop>${escapeHtml(c.phone)}</a></div>
+      <div class="contact-row">
+        <a href="tel:+${digits}" class="contact-icon call" title="Позвонить" data-stop>📞</a>
+        <a href="https://wa.me/${digits}" target="_blank" rel="noopener" class="contact-icon wa" title="Написать в WhatsApp" data-stop>WA</a>
+        <a href="https://t.me/+${digits}" target="_blank" rel="noopener" class="contact-icon tg" title="Написать в Telegram" data-stop>TG</a>
+        <button type="button" class="contact-icon copy" data-copy-phone="${escapeHtml(c.phone)}" title="Скопировать номер" data-stop>⧉</button>
+      </div>
+      <div class="what">${rem.service} — повтор ${rem.daysLeft<0? 'просрочен на '+Math.abs(rem.daysLeft)+' дн.' : 'через '+rem.daysLeft+' дн.'}</div>
+    </div>
+  `;
+  }).join('') || `<div class="empty-note">Нет актуальных напоминаний</div>`;
+
+  ['remindersList','mRemindersList'].forEach(id=>{
+    const list = document.getElementById(id);
+    if(!list) return;
+    list.innerHTML = html;
+    list.querySelectorAll('button[data-client]').forEach(btn=>{
+      btn.addEventListener('click', ()=> openBookingModal(btn.dataset.client, btn.dataset.service));
+    });
+    list.querySelectorAll('button[data-copy-phone]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{ e.stopPropagation(); copyToClipboard(btn.dataset.copyPhone); });
+    });
+    list.querySelectorAll('[data-dismiss-key]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const key = btn.dataset.dismissKey;
+        if(!state.dismissedReminders.includes(key)) state.dismissedReminders.push(key);
+        saveState();
+        renderReminders();
+        showToast('Напоминание скрыто', 'success');
+      });
+    });
+  });
+}
+
+/* ---- client drawer ---- */
+const drawerOverlay = document.getElementById('clientDrawerOverlay');
+function openClientDrawer(clientId){
+  const c = client(clientId);
+  if(!c) return;
+  const stats = clientStats(c);
+  const rems = remindersFor(c);
+  const drawer = document.getElementById('clientDrawer');
+  const timeline = stats.bookings
+    .slice()
+    .sort((a,b)=> bookingSortKey(b).localeCompare(bookingSortKey(a)))
+    .map(b=>{
+      return `<div class="timeline-item">
+        <div class="date">${new Date(b.start+'T00:00:00').toLocaleDateString('ru-RU')}${b.startTime?' · '+b.startTime:''}</div>
+        <div class="svc">${bookingServiceNames(b)}${b.status==='scheduled'?' <span style="color:var(--text-dim);font-weight:400;">(запланировано)</span>':''}${b.status==='cancelled'?' <span style="color:var(--danger);font-weight:400;">(отменено)</span>':''}</div>
+        <div class="price">${b.paid? bookingPrice(b).toLocaleString('ru-RU')+' ₽ · оплачено' : bookingPrice(b).toLocaleString('ru-RU')+' ₽ · не оплачено'}</div>
+        ${b.prepayment ? `<div class="price" style="color:var(--ice-soft);">Предоплата внесена: ${Number(b.prepayment).toLocaleString('ru-RU')} ₽</div>` : ''}
+        ${b.notes ? `<div style="font-size:11px;color:var(--text-dim);margin-top:2px;">${escapeHtml(b.notes)}</div>` : ''}
+      </div>`;
+    }).join('') || '<div class="empty-note">История пуста</div>';
+
+  drawer.innerHTML = `
+    <button class="drawer-close" id="drawerCloseBtn">×</button>
+    <h2>${c.name}</h2>
+    <div class="phone">${c.phone}</div>
+    <div class="stat-row">
+      <div class="stat-box"><div class="num">${stats.ltv.toLocaleString('ru-RU')} ₽</div><div class="lbl">LTV</div></div>
+      <div class="stat-box"><div class="num">${stats.visits}</div><div class="lbl">визитов</div></div>
+    </div>
+    <div style="margin-bottom:16px;">${c.cars.map(car=>`<span class="chip">${car.model} · ${car.plate}</span>`).join('')}</div>
+    ${rems.map(rem=>`<div class="reminder-item" style="margin-bottom:12px;">
+      <div class="who">Напоминание</div>
+      <div class="what">${rem.service} — повтор ${rem.daysLeft<0?'просрочен на '+Math.abs(rem.daysLeft)+' дн.':'через '+rem.daysLeft+' дн.'}</div>
+    </div>`).join('')}
+    <button class="btn btn-primary" id="drawerNewBooking" style="width:100%;margin-bottom:18px;">+ Новая запись</button>
+    <h3>История обслуживания</h3>
+    ${timeline}
+    <button class="btn btn-ghost btn-danger" id="drawerDeleteClient" style="width:100%;margin-top:18px;">Удалить клиента</button>
+  `;
+  document.getElementById('drawerCloseBtn').addEventListener('click', ()=> drawerOverlay.classList.remove('open'));
+  document.getElementById('drawerDeleteClient').addEventListener('click', ()=>{
+    if(!confirm(`Удалить клиента «${c.name}» вместе с историей записей и приёмок? Это действие необратимо.`)) return;
+    state.clients = state.clients.filter(x=>x.id!==c.id);
+    state.bookings = state.bookings.filter(b=>b.clientId!==c.id);
+    state.inspections = state.inspections.filter(i=>i.clientId!==c.id);
+    saveState();
+    drawerOverlay.classList.remove('open');
+    renderClients();
+    refreshBoard();
+    showToast('Клиент удалён', 'success');
+  });
+  document.getElementById('drawerNewBooking').addEventListener('click', ()=>{
+    drawerOverlay.classList.remove('open');
+    openBookingModal(c.id);
+  });
+  drawerOverlay.classList.add('open');
+}
+drawerOverlay.addEventListener('click', e=>{ if(e.target===drawerOverlay) drawerOverlay.classList.remove('open'); });
+
+[bkModal].forEach(ov=> ov.addEventListener('click', e=>{ if(e.target===ov) ov.classList.remove('open'); }));
+
+/* ========================================================================
+   INSPECTIONS (Приёмка)
+   ======================================================================== */
+function renderInspectionsList(){
+  const tbody = document.getElementById('inspectionsTbody');
+  const rows = state.inspections.slice().sort((a,b)=> b.date.localeCompare(a.date));
+  tbody.innerHTML = rows.map(insp=>{
+    const info = findClientCar(insp.carId);
+    return `<tr data-id="${insp.id}">
+      <td>${new Date(insp.date+'T00:00:00').toLocaleDateString('ru-RU')}</td>
+      <td>${info?info.client.name:'—'}</td>
+      <td>${info?info.car.model+' · '+info.car.plate:'—'}</td>
+      <td><span class="status-pill ${insp.status}">${insp.status==='signed'?'Подписан':'Черновик'}</span></td>
+      <td>${insp.damage.length}</td>
+      <td>${insp.photos.length}</td>
+      <td><button class="row-del" data-del-insp="${insp.id}" title="Удалить приёмку">✕</button></td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="7"><span class="empty-note">Приёмок пока нет</span></td></tr>`;
+  tbody.querySelectorAll('tr[data-id]').forEach(tr=> tr.addEventListener('click', ()=> openInspectionEditor(tr.dataset.id)));
+  tbody.querySelectorAll('button[data-del-insp]').forEach(btn=> btn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    if(!confirm('Удалить эту приёмку без возможности восстановления?')) return;
+    state.inspections = state.inspections.filter(i=>i.id!==btn.dataset.delInsp);
+    saveState();
+    renderInspectionsList();
+    refreshBoard();
+    showToast('Приёмка удалена', 'success');
+  }));
+
+  const mobileList = document.getElementById('inspectionsMobileList');
+  mobileList.innerHTML = rows.map(insp=>{
+    const info = findClientCar(insp.carId);
+    return `<div class="record-card" data-id="${insp.id}">
+      <div class="rc-title">${info?escapeHtml(info.client.name):'—'}</div>
+      <div class="rc-row"><span class="rc-lbl">Дата</span><span class="rc-val">${new Date(insp.date+'T00:00:00').toLocaleDateString('ru-RU')}</span></div>
+      <div class="rc-row"><span class="rc-lbl">Авто</span><span class="rc-val">${info?escapeHtml(info.car.model+' · '+info.car.plate):'—'}</span></div>
+      <div class="rc-row"><span class="rc-lbl">Статус</span><span class="rc-val"><span class="status-pill ${insp.status}">${insp.status==='signed'?'Подписан':'Черновик'}</span></span></div>
+      <div class="rc-row"><span class="rc-lbl">Повреждений</span><span class="rc-val">${insp.damage.length}</span></div>
+      <div class="rc-row"><span class="rc-lbl">Фото</span><span class="rc-val">${insp.photos.length}</span></div>
+      <div class="rc-actions">
+        <button class="btn btn-ghost btn-danger" data-del-insp="${insp.id}">Удалить</button>
+      </div>
+    </div>`;
+  }).join('') || `<div class="empty-note">Приёмок пока нет</div>`;
+  mobileList.querySelectorAll('.record-card').forEach(card=>{
+    card.addEventListener('click', (e)=>{
+      if(e.target.closest('[data-del-insp]')) return;
+      openInspectionEditor(card.dataset.id);
+    });
+  });
+  mobileList.querySelectorAll('button[data-del-insp]').forEach(btn=> btn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    if(!confirm('Удалить эту приёмку без возможности восстановления?')) return;
+    state.inspections = state.inspections.filter(i=>i.id!==btn.dataset.delInsp);
+    saveState();
+    renderInspectionsList();
+    refreshBoard();
+    showToast('Приёмка удалена', 'success');
+  }));
+}
+
+const inspModal = document.getElementById('inspectionModalOverlay');
+function fillInspectionCarOptions(){
+  const c = client(document.getElementById('inClient').value);
+  document.getElementById('inCar').innerHTML = (c?c.cars:[]).map(car=>`<option value="${car.id}">${car.model} · ${car.plate}</option>`).join('');
+}
+document.getElementById('newInspectionBtn').addEventListener('click', ()=>{
+  document.getElementById('inClient').innerHTML = state.clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  fillInspectionCarOptions();
+  inspModal.classList.add('open');
+});
+document.getElementById('inClient').addEventListener('change', fillInspectionCarOptions);
+document.getElementById('inCancel').addEventListener('click', ()=> inspModal.classList.remove('open'));
+document.getElementById('inStart').addEventListener('click', ()=>{
+  const clientId = document.getElementById('inClient').value;
+  const carId = document.getElementById('inCar').value;
+  if(!clientId || !carId){ showToast('Выберите клиента и авто', 'danger'); return; }
+  const insp = {id:'i'+Date.now(), clientId, carId, bookingId:null, date:todayISO(),
+    mileage:'', fuel:50, valuables:'', wheels:{FL:'ok',FR:'ok',RL:'ok',RR:'ok'},
+    damage:[], photos:[], status:'draft', signedAt:null, signature:null};
+  state.inspections.push(insp);
+  saveState();
+  inspModal.classList.remove('open');
+  openInspectionEditor(insp.id);
+});
+inspModal.addEventListener('click', e=>{ if(e.target===inspModal) inspModal.classList.remove('open'); });
+
+document.getElementById('backToInspections').addEventListener('click', ()=> showScreen('inspections'));
+document.getElementById('printActBtn').addEventListener('click', ()=> window.print());
+document.getElementById('deleteInspectionBtn').addEventListener('click', ()=>{
+  if(!confirm('Удалить эту приёмку без возможности восстановления?')) return;
+  state.inspections = state.inspections.filter(i=>i.id!==currentInspectionId);
+  saveState();
+  refreshBoard();
+  showScreen('inspections');
+  showToast('Приёмка удалена', 'success');
+});
+
+function openInspectionEditor(id){
+  currentInspectionId = id;
+  activeDamageType = 'chip';
+  showScreen('inspection-editor');
+  renderInspectionEditor();
+}
+
+function renderInspectionEditor(){
+  const insp = inspection(currentInspectionId);
+  if(!insp) return;
+  const info = findClientCar(insp.carId);
+
+  document.getElementById('actHeader').innerHTML = `
+    <div>
+      <div class="who">${info?info.client.name:'—'}</div>
+      <div class="meta">${info?info.car.model+' · '+info.car.plate:''} · приёмка от ${new Date(insp.date+'T00:00:00').toLocaleDateString('ru-RU')}</div>
+    </div>
+    <span class="status-pill ${insp.status}">${insp.status==='signed' ? 'Подписан клиентом '+new Date(insp.signedAt+'T00:00:00').toLocaleDateString('ru-RU') : 'Черновик'}</span>
+  `;
+
+  const dt = document.getElementById('dmgToolbar');
+  dt.innerHTML = DAMAGE_TYPES.map(d=>`<button type="button" class="dmg-btn ${d.id===activeDamageType?'active':''}" data-type="${d.id}"><span class="dot" style="background:${d.color}"></span>${d.label}</button>`).join('');
+  dt.querySelectorAll('.dmg-btn').forEach(b=> b.addEventListener('click', ()=>{
+    activeDamageType = b.dataset.type;
+    dt.querySelectorAll('.dmg-btn').forEach(x=> x.classList.toggle('active', x.dataset.type===activeDamageType));
+  }));
+
+  renderDamageMarkers();
+
+  document.getElementById('chkMileage').value = insp.mileage||'';
+  document.getElementById('chkFuel').value = insp.fuel;
+  document.getElementById('chkValuables').value = insp.valuables||'';
+  ['FL','FR','RL','RR'].forEach(w=>{
+    const sel = document.getElementById('wheel'+w);
+    sel.innerHTML = WHEEL_OPTIONS.map(o=>`<option value="${o.v}">${o.l}</option>`).join('');
+    sel.value = insp.wheels[w];
+  });
+
+  renderPhotoGrid();
+  setupSignaturePad();
+  const signedNote = document.getElementById('signedNote');
+  if(insp.signature){
+    if(sigCtx){
+      const img = new Image();
+      img.onload = ()=> sigCtx.drawImage(img, 0, 0, sigCanvasEl.width, sigCanvasEl.height);
+      img.src = insp.signature;
+    }
+    signedNote.style.display = 'block';
+    signedNote.textContent = 'Подписано ' + new Date(insp.signedAt+'T00:00:00').toLocaleDateString('ru-RU');
+  } else {
+    signedNote.style.display = 'none';
+  }
+}
+
+/* ---- damage map ---- */
+function svgPoint(svg, evt){
+  const pt = svg.createSVGPoint();
+  pt.x = evt.clientX; pt.y = evt.clientY;
+  const ctm = svg.getScreenCTM().inverse();
+  const p = pt.matrixTransform(ctm);
+  return {x:p.x, y:p.y};
+}
+function renderDamageMarkers(){
+  const insp = inspection(currentInspectionId);
+  const layer = document.getElementById('markersLayer');
+  layer.innerHTML = '';
+  insp.damage.forEach((d, idx)=>{
+    const type = DAMAGE_TYPES.find(t=>t.id===d.type) || DAMAGE_TYPES[3];
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('class','dmg-marker');
+    g.innerHTML = `<circle cx="${d.x}" cy="${d.y}" r="11" fill="${type.color}" stroke="#0d1b1e" stroke-width="1.5"></circle><text class="num" x="${d.x}" y="${d.y+4}" text-anchor="middle">${idx+1}</text>`;
+    g.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const note = prompt('Комментарий к отметке №'+(idx+1)+' ('+type.label+'):', d.note||'');
+      if(note !== null){ d.note = note; saveState(); renderDamageMarkers(); }
+    });
+    layer.appendChild(g);
+  });
+  renderDamageList();
+}
+function renderDamageList(){
+  const insp = inspection(currentInspectionId);
+  const list = document.getElementById('dmgList');
+  list.innerHTML = insp.damage.map((d,idx)=>{
+    const type = DAMAGE_TYPES.find(t=>t.id===d.type) || DAMAGE_TYPES[3];
+    return `<div class="dmg-item">
+      <span class="dot" style="background:${type.color}"></span>
+      <span class="lbl">№${idx+1} · ${type.label}${d.note?' — '+d.note:''}</span>
+      <button data-del="${d.id}" class="no-print">✕</button>
+    </div>`;
+  }).join('') || '<div class="empty-note">Отметок пока нет — кликните по схеме кузова</div>';
+  list.querySelectorAll('button[data-del]').forEach(b=> b.addEventListener('click', ()=>{
+    insp.damage = insp.damage.filter(d=>d.id!==b.dataset.del);
+    saveState();
+    renderDamageMarkers();
+  }));
+}
+document.getElementById('carSvg').addEventListener('click', (e)=>{
+  const insp = inspection(currentInspectionId);
+  if(!insp) return;
+  const p = svgPoint(document.getElementById('carSvg'), e);
+  insp.damage.push({id:'d'+Date.now(), type:activeDamageType, x:Math.round(p.x), y:Math.round(p.y), note:''});
+  saveState();
+  renderDamageMarkers();
+});
+
+/* ---- photos ---- */
+function renderPhotoGrid(){
+  const insp = inspection(currentInspectionId);
+  const grid = document.getElementById('photoGrid');
+  if(!insp.photos.length){ grid.innerHTML = '<div class="photo-empty">Фото ещё не загружены</div>'; return; }
+  grid.innerHTML = insp.photos.map(p=>`
+    <div class="photo-thumb">
+      <img src="${p.dataUrl}" data-src="${p.dataUrl}">
+      <button class="rm no-print" data-id="${p.id}">×</button>
+    </div>`).join('');
+  grid.querySelectorAll('img').forEach(img=> img.addEventListener('click', ()=>{
+    document.getElementById('lightboxImg').src = img.dataset.src;
+    document.getElementById('lightboxOverlay').classList.add('open');
+  }));
+  grid.querySelectorAll('.rm').forEach(btn=> btn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    insp.photos = insp.photos.filter(p=>p.id!==btn.dataset.id);
+    saveState();
+    renderPhotoGrid();
+  }));
+}
+document.getElementById('lightboxOverlay').addEventListener('click', ()=> document.getElementById('lightboxOverlay').classList.remove('open'));
+document.getElementById('addPhotoBtn').addEventListener('click', ()=> document.getElementById('photoInput').click());
+document.getElementById('photoInput').addEventListener('change', (e)=>{
+  const insp = inspection(currentInspectionId);
+  [...e.target.files].forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const maxW = 900;
+        const scale = Math.min(1, maxW/img.width);
+        const w = Math.round(img.width*scale), h = Math.round(img.height*scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.72);
+        insp.photos.push({id:'p'+Date.now()+Math.random().toString(36).slice(2,6), dataUrl});
+        saveState();
+        renderPhotoGrid();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+});
+
+/* ---- checklist save ---- */
+document.getElementById('saveInspectionBtn').addEventListener('click', ()=>{
+  const insp = inspection(currentInspectionId);
+  if(!insp) return;
+  insp.mileage = document.getElementById('chkMileage').value;
+  insp.fuel = document.getElementById('chkFuel').value;
+  insp.valuables = document.getElementById('chkValuables').value;
+  insp.wheels = {
+    FL: document.getElementById('wheelFL').value,
+    FR: document.getElementById('wheelFR').value,
+    RL: document.getElementById('wheelRL').value,
+    RR: document.getElementById('wheelRR').value,
+  };
+  saveState();
+  showToast('Приёмка сохранена', 'success');
+});
+
+/* ---- signature pad ---- */
+function setupSignaturePad(){
+  const old = document.getElementById('sigCanvas');
+  const fresh = old.cloneNode(true);
+  old.parentNode.replaceChild(fresh, old);
+  sigCanvasEl = fresh;
+  sigCtx = sigCanvasEl.getContext && sigCanvasEl.getContext('2d');
+  if(!sigCtx) return; // canvas 2d context unavailable in this environment
+  sigCtx.strokeStyle = '#edeff2';
+  sigCtx.lineWidth = 2;
+  sigCtx.lineCap = 'round';
+  sigHasContent = false;
+  sigDrawing = false;
+
+  function pos(e){
+    const r = sigCanvasEl.getBoundingClientRect();
+    return {x:(e.clientX-r.left)*(sigCanvasEl.width/r.width), y:(e.clientY-r.top)*(sigCanvasEl.height/r.height)};
+  }
+  sigCanvasEl.addEventListener('pointerdown', e=>{
+    sigDrawing = true;
+    const p = pos(e);
+    sigCtx.beginPath();
+    sigCtx.moveTo(p.x, p.y);
+  });
+  sigCanvasEl.addEventListener('pointermove', e=>{
+    if(!sigDrawing) return;
+    const p = pos(e);
+    sigCtx.lineTo(p.x, p.y);
+    sigCtx.stroke();
+    sigHasContent = true;
+  });
+  window.addEventListener('pointerup', ()=> sigDrawing=false);
+}
+document.getElementById('sigClear').addEventListener('click', ()=>{
+  if(!sigCtx) return;
+  sigCtx.clearRect(0,0,sigCanvasEl.width, sigCanvasEl.height);
+  sigHasContent = false;
+});
+document.getElementById('sigConfirm').addEventListener('click', ()=>{
+  const insp = inspection(currentInspectionId);
+  if(!insp) return;
+  if(!sigHasContent && !insp.signature){ showToast('Попросите клиента расписаться в поле выше', 'danger'); return; }
+  if(sigCanvasEl && !sigCtx){ /* canvas unsupported in this environment */ }
+  if(sigHasContent) insp.signature = sigCanvasEl.toDataURL('image/png');
+  insp.status = 'signed';
+  insp.signedAt = todayISO();
+  saveState();
+  renderInspectionEditor();
+  showToast('Акт подписан', 'success');
+});
+
+/* ========================================================================
+   INCOME (ДОХОДЫ)
+   ======================================================================== */
+function getIncomePeriodRange(){
+  const type = document.getElementById('incPeriodSelect').value;
+  const now = new Date();
+  if(type==='7days'){
+    return {from: addDays(todayISO(), -6), to: todayISO()};
+  }
+  if(type==='month'){
+    return {from:firstDayOfMonth(now.getFullYear(), now.getMonth()), to:lastDayOfMonth(now.getFullYear(), now.getMonth())};
+  }
+  if(type==='prevmonth'){
+    const py = now.getMonth()===0 ? now.getFullYear()-1 : now.getFullYear();
+    const pm = now.getMonth()===0 ? 11 : now.getMonth()-1;
+    return {from:firstDayOfMonth(py, pm), to:lastDayOfMonth(py, pm)};
+  }
+  if(type==='year'){
+    return {from:`${now.getFullYear()}-01-01`, to:`${now.getFullYear()}-12-31`};
+  }
+  if(type==='all'){
+    const dates = state.bookings.map(b=>b.start).sort();
+    return {from: dates.length ? dates[0] : todayISO(), to: todayISO()};
+  }
+  const from = document.getElementById('incFromDate').value || todayISO();
+  const to = document.getElementById('incToDate').value || todayISO();
+  return {from, to};
+}
+
+function renderIncome(){
+  const {from, to} = getIncomePeriodRange();
+  const paidBookings = state.bookings
+    .filter(b=> b.paid && b.status!=='cancelled' && b.start>=from && b.start<=to)
+    .sort((a,b)=> b.start.localeCompare(a.start));
+
+  const total = paidBookings.reduce((s,b)=> s+Number(bookingPrice(b)||0), 0);
+  document.getElementById('incSummaryRow').innerHTML = `
+    <div class="stat-box"><div class="num" style="color:var(--green);">${total.toLocaleString('ru-RU')} ₽</div><div class="lbl">Доходы за период</div></div>
+    <div class="stat-box"><div class="num">${paidBookings.length}</div><div class="lbl">Оплаченных записей</div></div>
+  `;
+
+  const tbody = document.getElementById('incomeTbody');
+  tbody.innerHTML = paidBookings.map(b=>{
+    const info = findClientCar(b.carId);
+    return `<tr>
+      <td>${new Date(b.start+'T00:00:00').toLocaleDateString('ru-RU')}</td>
+      <td>${info?escapeHtml(info.client.name):'—'}</td>
+      <td>${info?escapeHtml(info.car.model):'—'}</td>
+      <td>${bookingServiceNames(b)}</td>
+      <td class="ltv">${Number(bookingPrice(b)||0).toLocaleString('ru-RU')} ₽</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="5"><span class="empty-note">За выбранный период оплаченных записей нет</span></td></tr>`;
+
+  const mobileList = document.getElementById('incomeMobileList');
+  mobileList.innerHTML = paidBookings.map(b=>{
+    const info = findClientCar(b.carId);
+    return `<div class="record-card">
+      <div class="rc-title">${info?escapeHtml(info.client.name):'—'}</div>
+      <div class="rc-row"><span class="rc-lbl">Дата</span><span class="rc-val">${new Date(b.start+'T00:00:00').toLocaleDateString('ru-RU')}</span></div>
+      <div class="rc-row"><span class="rc-lbl">Авто</span><span class="rc-val">${info?escapeHtml(info.car.model):'—'}</span></div>
+      <div class="rc-row"><span class="rc-lbl">Услуги</span><span class="rc-val">${bookingServiceNames(b)}</span></div>
+      <div class="rc-row"><span class="rc-lbl">Сумма</span><span class="rc-val ltv">${Number(bookingPrice(b)||0).toLocaleString('ru-RU')} ₽</span></div>
+    </div>`;
+  }).join('') || `<div class="empty-note">За выбранный период оплаченных записей нет</div>`;
+}
+
+document.getElementById('incPeriodSelect').addEventListener('change', ()=>{
+  document.getElementById('incCustomRangeRow').style.display = document.getElementById('incPeriodSelect').value==='custom' ? 'flex' : 'none';
+  renderIncome();
+});
+document.getElementById('incFromDate').addEventListener('change', renderIncome);
+document.getElementById('incToDate').addEventListener('change', renderIncome);
+
+/* ========================================================================
+   WAREHOUSE (СКЛАД) — EXPENSES
+   ======================================================================== */
+const EXPENSE_CATEGORIES = [
+  {id:'rent',  name:'Аренда',          cls:'rent'},
+  {id:'chem',  name:'Химия',           cls:'chem'},
+  {id:'other', name:'Непредвиденные',  cls:'other'},
+];
+function expCategoryInfo(id){ return EXPENSE_CATEGORIES.find(c=>c.id===id) || {name:id, cls:'other'}; }
+
+let currentExpenseId = null;
+let expDraftPhotos = [];
+
+function getExpensePeriodRange(){
+  const type = document.getElementById('expPeriodSelect').value;
+  const now = new Date();
+  if(type==='month'){
+    return {from:firstDayOfMonth(now.getFullYear(), now.getMonth()), to:lastDayOfMonth(now.getFullYear(), now.getMonth())};
+  }
+  if(type==='prevmonth'){
+    const py = now.getMonth()===0 ? now.getFullYear()-1 : now.getFullYear();
+    const pm = now.getMonth()===0 ? 11 : now.getMonth()-1;
+    return {from:firstDayOfMonth(py, pm), to:lastDayOfMonth(py, pm)};
+  }
+  if(type==='year'){
+    return {from:`${now.getFullYear()}-01-01`, to:`${now.getFullYear()}-12-31`};
+  }
+  if(type==='all'){
+    const dates = state.expenses.map(e=>e.date).sort();
+    return {from: dates.length ? dates[0] : todayISO(), to: todayISO()};
+  }
+  const from = document.getElementById('expFromDate').value || todayISO();
+  const to = document.getElementById('expToDate').value || todayISO();
+  return {from, to};
+}
+
+function renderWarehouse(){
+  const {from, to} = getExpensePeriodRange();
+  const filtered = state.expenses
+    .filter(e=> e.date>=from && e.date<=to)
+    .sort((a,b)=> b.date.localeCompare(a.date));
+
+  // ---- table ----
+  const tbody = document.getElementById('expensesTbody');
+  tbody.innerHTML = filtered.map(e=>{
+    const cat = expCategoryInfo(e.category);
+    const extraPhotos = e.photos && e.photos.length>1 ? `<span style="font-size:10px;color:var(--text-dim);margin-left:5px;">+${e.photos.length-1}</span>` : '';
+    const thumb = e.photos && e.photos.length ? `<img class="exp-receipt-thumb" src="${e.photos[0].dataUrl}" data-src="${e.photos[0].dataUrl}">${extraPhotos}` : '<span class="empty-note">—</span>';
+    return `<tr data-id="${e.id}">
+      <td>${new Date(e.date+'T00:00:00').toLocaleDateString('ru-RU')}</td>
+      <td><span class="cat-chip ${cat.cls}">${cat.name}</span></td>
+      <td class="ltv">${Number(e.amount||0).toLocaleString('ru-RU')} ₽</td>
+      <td>${e.note ? escapeHtml(e.note) : '<span class="empty-note">—</span>'}</td>
+      <td>${thumb}</td>
+      <td><button class="row-del" data-del-exp="${e.id}" title="Удалить расход">✕</button></td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="6"><span class="empty-note">За выбранный период расходов нет</span></td></tr>`;
+
+  tbody.querySelectorAll('tr[data-id]').forEach(tr=>{
+    tr.addEventListener('click', (e)=>{
+      if(e.target.closest('[data-del-exp]') || e.target.closest('img')) return;
+      openExpenseModal(tr.dataset.id);
+    });
+  });
+  tbody.querySelectorAll('img.exp-receipt-thumb').forEach(img=>{
+    img.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      document.getElementById('lightboxImg').src = img.dataset.src;
+      document.getElementById('lightboxOverlay').classList.add('open');
+    });
+  });
+  tbody.querySelectorAll('[data-del-exp]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      if(!confirm('Удалить этот расход безвозвратно?')) return;
+      state.expenses = state.expenses.filter(x=>x.id!==btn.dataset.delExp);
+      saveState();
+      renderWarehouse();
+      showToast('Расход удалён', 'success');
+    });
+  });
+
+  // ---- mobile cards ----
+  const mobileList = document.getElementById('expensesMobileList');
+  mobileList.innerHTML = filtered.map(e=>{
+    const cat = expCategoryInfo(e.category);
+    const thumb = e.photos && e.photos.length ? `<img class="rc-photo exp-receipt-thumb" src="${e.photos[0].dataUrl}" data-src="${e.photos[0].dataUrl}">${e.photos.length>1?`<span style="font-size:10px;color:var(--text-dim);margin-left:5px;">+${e.photos.length-1}</span>`:''}` : '<span class="empty-note">—</span>';
+    return `<div class="record-card" data-id="${e.id}">
+      <div class="rc-title"><span class="cat-chip ${cat.cls}">${cat.name}</span></div>
+      <div class="rc-row"><span class="rc-lbl">Дата</span><span class="rc-val">${new Date(e.date+'T00:00:00').toLocaleDateString('ru-RU')}</span></div>
+      <div class="rc-row"><span class="rc-lbl">Сумма</span><span class="rc-val ltv">${Number(e.amount||0).toLocaleString('ru-RU')} ₽</span></div>
+      <div class="rc-row"><span class="rc-lbl">Чек</span><span class="rc-val">${thumb}</span></div>
+      ${e.note ? `<div class="rc-note">${escapeHtml(e.note)}</div>` : ''}
+      <div class="rc-actions">
+        <button class="btn btn-ghost btn-danger" data-del-exp="${e.id}">Удалить</button>
+      </div>
+    </div>`;
+  }).join('') || `<div class="empty-note">За выбранный период расходов нет</div>`;
+  mobileList.querySelectorAll('.record-card').forEach(card=>{
+    card.addEventListener('click', (e)=>{
+      if(e.target.closest('[data-del-exp]') || e.target.closest('img')) return;
+      openExpenseModal(card.dataset.id);
+    });
+  });
+  mobileList.querySelectorAll('img.exp-receipt-thumb').forEach(img=>{
+    img.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      document.getElementById('lightboxImg').src = img.dataset.src;
+      document.getElementById('lightboxOverlay').classList.add('open');
+    });
+  });
+  mobileList.querySelectorAll('[data-del-exp]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      if(!confirm('Удалить этот расход безвозвратно?')) return;
+      state.expenses = state.expenses.filter(x=>x.id!==btn.dataset.delExp);
+      saveState();
+      renderWarehouse();
+      showToast('Расход удалён', 'success');
+    });
+  });
+
+  // ---- summary ----
+  const total = filtered.reduce((s,e)=> s+Number(e.amount||0), 0);
+  const byCat = {rent:0, chem:0, other:0};
+  filtered.forEach(e=>{ byCat[e.category] = (byCat[e.category]||0) + Number(e.amount||0); });
+  document.getElementById('expSummaryRow').innerHTML = `
+    <div class="stat-box" style="border-color:var(--green);"><div class="num" style="color:var(--green);">${total.toLocaleString('ru-RU')} ₽</div><div class="lbl">Итого за период</div></div>
+    <div class="stat-box"><div class="num" style="color:var(--amber);">${byCat.rent.toLocaleString('ru-RU')} ₽</div><div class="lbl">Аренда</div></div>
+    <div class="stat-box"><div class="num" style="color:var(--ice);">${byCat.chem.toLocaleString('ru-RU')} ₽</div><div class="lbl">Химия</div></div>
+    <div class="stat-box"><div class="num" style="color:var(--purple);">${byCat.other.toLocaleString('ru-RU')} ₽</div><div class="lbl">Непредвиденные</div></div>
+  `;
+
+  // ---- chart: one bar per calendar month covered by [from,to] ----
+  const chartEl = document.getElementById('expChartBars');
+  const months = [];
+  let cursor = new Date(from+'T00:00:00');
+  cursor = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+  const end = new Date(to+'T00:00:00');
+  let guard = 0;
+  while(cursor <= end && guard < 60){
+    months.push(`${cursor.getFullYear()}-${String(cursor.getMonth()+1).padStart(2,'0')}`);
+    cursor.setMonth(cursor.getMonth()+1);
+    guard++;
+  }
+  if(!months.length) months.push(monthKey(from));
+
+  const monthTotals = months.map(mk=>{
+    const sums = {rent:0, chem:0, other:0};
+    filtered.forEach(e=>{ if(monthKey(e.date)===mk) sums[e.category] = (sums[e.category]||0) + Number(e.amount||0); });
+    return {mk, sums, total: sums.rent+sums.chem+sums.other};
+  });
+  const maxTotal = Math.max(1, ...monthTotals.map(m=>m.total));
+
+  chartEl.classList.remove('chart-bars-donut');
+
+  if(!filtered.length){
+    chartEl.innerHTML = '<div class="chart-empty">Нет данных для отображения за выбранный период</div>';
+  } else if(months.length === 1){
+    // ---- single calendar month selected: circular donut with month+year in the center ----
+    chartEl.classList.add('chart-bars-donut');
+    const m = monthTotals[0];
+    let acc = 0;
+    const stops = [];
+    [['rent','var(--amber)'], ['chem','var(--ice)'], ['other','var(--purple)']].forEach(([cat,color])=>{
+      const p = m.total ? (m.sums[cat]/m.total*100) : 0;
+      if(p > 0){
+        stops.push(`${color} ${acc}% ${acc+p}%`);
+        acc += p;
+      }
+    });
+    const gradient = stops.length ? `conic-gradient(${stops.join(', ')})` : 'var(--line-soft)';
+    const [y, mm] = m.mk.split('-');
+    const monthLabelFull = `${MONTH_NAMES[Number(mm)-1]} ${y}`;
+    chartEl.innerHTML = `<div class="chart-donut-wrap">
+      <div class="chart-donut" style="background:${gradient};">
+        <div class="chart-donut-center">
+          <div class="chart-donut-month">${monthLabelFull}</div>
+          <div class="chart-donut-total">${m.total.toLocaleString('ru-RU')} ₽</div>
+        </div>
+      </div>
+    </div>`;
+  } else {
+    chartEl.innerHTML = monthTotals.map(m=>{
+      const barH = Math.max(2, Math.round(m.total/maxTotal*160));
+      const pct = (cat)=> m.total ? Math.round(m.sums[cat]/m.total*100) : 0;
+      return `<div class="chart-bar-col">
+        <div class="chart-bar-total">${m.total ? m.total.toLocaleString('ru-RU') : ''}</div>
+        <div class="chart-bar-stack" style="height:${barH}px;">
+          <div class="chart-seg other" style="height:${pct('other')}%;"></div>
+          <div class="chart-seg chem" style="height:${pct('chem')}%;"></div>
+          <div class="chart-seg rent" style="height:${pct('rent')}%;"></div>
+        </div>
+        <div class="chart-bar-label">${monthLabel(m.mk)}</div>
+      </div>`;
+    }).join('');
+  }
+}
+
+document.getElementById('expPeriodSelect').addEventListener('change', ()=>{
+  document.getElementById('expCustomRangeRow').style.display = document.getElementById('expPeriodSelect').value==='custom' ? 'flex' : 'none';
+  renderWarehouse();
+});
+document.getElementById('expFromDate').addEventListener('change', renderWarehouse);
+document.getElementById('expToDate').addEventListener('change', renderWarehouse);
+document.getElementById('newExpenseBtn').addEventListener('click', ()=> openExpenseModal(null));
+
+function openExpenseModal(id){
+  currentExpenseId = id;
+  const e = id ? state.expenses.find(x=>x.id===id) : null;
+  document.getElementById('expModalTitle').textContent = e ? 'Редактировать расход' : 'Новый расход';
+  document.getElementById('expDate').value = e ? e.date : todayISO();
+  document.getElementById('expCategory').value = e ? e.category : 'rent';
+  document.getElementById('expAmount').value = e ? e.amount : '';
+  document.getElementById('expNote').value = e ? (e.note||'') : '';
+  document.getElementById('expDelete').style.display = e ? 'inline-block' : 'none';
+  expDraftPhotos = e && e.photos ? e.photos.slice() : [];
+  renderExpPhotoGrid();
+  document.getElementById('expenseModalOverlay').classList.add('open');
+}
+document.getElementById('expCancel').addEventListener('click', ()=> document.getElementById('expenseModalOverlay').classList.remove('open'));
+
+function renderExpPhotoGrid(){
+  const grid = document.getElementById('expPhotoGrid');
+  if(!expDraftPhotos.length){ grid.innerHTML = '<div class="photo-empty">Фото не прикреплены</div>'; return; }
+  grid.innerHTML = expDraftPhotos.map(p=>`
+    <div class="photo-thumb">
+      <img src="${p.dataUrl}" data-src="${p.dataUrl}">
+      <button class="rm" data-id="${p.id}">×</button>
+    </div>`).join('');
+  grid.querySelectorAll('img').forEach(img=> img.addEventListener('click', ()=>{
+    document.getElementById('lightboxImg').src = img.dataset.src;
+    document.getElementById('lightboxOverlay').classList.add('open');
+  }));
+  grid.querySelectorAll('.rm').forEach(btn=> btn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    expDraftPhotos = expDraftPhotos.filter(p=>p.id!==btn.dataset.id);
+    renderExpPhotoGrid();
+  }));
+}
+document.getElementById('expAddPhotoBtn').addEventListener('click', ()=> document.getElementById('expPhotoInput').click());
+document.getElementById('expPhotoInput').addEventListener('change', (e)=>{
+  [...e.target.files].forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const maxW = 900;
+        const scale = Math.min(1, maxW/img.width);
+        const w = Math.round(img.width*scale), h = Math.round(img.height*scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext && canvas.getContext('2d');
+        let dataUrl = ev.target.result;
+        if(ctx){ ctx.drawImage(img, 0, 0, w, h); dataUrl = canvas.toDataURL('image/jpeg', 0.72); }
+        expDraftPhotos.push({id:'ep'+Date.now()+Math.random().toString(36).slice(2,6), dataUrl});
+        renderExpPhotoGrid();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+});
+
+document.getElementById('expSave').addEventListener('click', ()=>{
+  const date = document.getElementById('expDate').value;
+  const category = document.getElementById('expCategory').value;
+  const amount = Number(document.getElementById('expAmount').value);
+  if(!date){ showToast('Укажите дату расхода', 'danger'); return; }
+  if(!amount || amount<=0){ showToast('Укажите сумму расхода', 'danger'); return; }
+  const note = document.getElementById('expNote').value.trim();
+  if(currentExpenseId){
+    const ex = state.expenses.find(x=>x.id===currentExpenseId);
+    ex.date=date; ex.category=category; ex.amount=amount; ex.note=note; ex.photos=expDraftPhotos;
+  } else {
+    state.expenses.push({id:'exp'+Date.now()+Math.random().toString(36).slice(2,6), date, category, amount, note, photos:expDraftPhotos});
+  }
+  saveState();
+  document.getElementById('expenseModalOverlay').classList.remove('open');
+  renderWarehouse();
+  showToast(currentExpenseId ? 'Расход обновлён' : 'Расход добавлен', 'success');
+});
+document.getElementById('expDelete').addEventListener('click', ()=>{
+  if(!currentExpenseId) return;
+  if(!confirm('Удалить этот расход безвозвратно?')) return;
+  state.expenses = state.expenses.filter(x=>x.id!==currentExpenseId);
+  saveState();
+  document.getElementById('expenseModalOverlay').classList.remove('open');
+  renderWarehouse();
+  showToast('Расход удалён', 'success');
+});
+
+/* ========================================================================
+   PAYROLL (ЗАРПЛАТА)
+   ======================================================================== */
+const MASTER_COMMISSION_RATE = 0.35;
+function master(id){ return state.masters.find(m=>m.id===id); }
+
+function renderPayrollScreen(){
+  renderMastersList();
+  renderPayrollList();
+}
+
+/* ---- masters CRUD ---- */
+function renderMastersList(){
+  const box = document.getElementById('mastersList');
+  if(!state.masters.length){
+    box.innerHTML = '<div class="empty-note">Мастера ещё не добавлены</div>';
+  } else {
+    box.innerHTML = state.masters.map(m=>`
+      <div class="master-item" data-id="${m.id}">
+        <span>${escapeHtml(m.name)}</span>
+        <button class="row-del" data-del-master="${m.id}" title="Удалить мастера">✕</button>
+      </div>`).join('');
+    box.querySelectorAll('[data-del-master]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id = btn.dataset.delMaster;
+        const hasEntries = state.payrollEntries.some(p=>p.masterId===id);
+        const msg = hasEntries
+          ? 'У этого мастера есть начисления зарплаты — удалить мастера и все его начисления?'
+          : 'Удалить этого мастера?';
+        if(!confirm(msg)) return;
+        state.masters = state.masters.filter(m=>m.id!==id);
+        state.payrollEntries = state.payrollEntries.filter(p=>p.masterId!==id);
+        saveState();
+        renderPayrollScreen();
+        showToast('Мастер удалён', 'success');
+      });
+    });
+  }
+  // keep the "add master" input's Enter-to-submit working, and refresh the modal's master dropdown
+  const sel = document.getElementById('prMaster');
+  if(sel){
+    const prevValue = sel.value;
+    sel.innerHTML = state.masters.length
+      ? state.masters.map(m=>`<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('')
+      : '<option value="" disabled selected>Сначала добавьте мастера</option>';
+    if(state.masters.some(m=>m.id===prevValue)) sel.value = prevValue;
+  }
+}
+document.getElementById('addMasterBtn').addEventListener('click', ()=>{
+  const input = document.getElementById('newMasterName');
+  const name = input.value.trim();
+  if(!name){ showToast('Введите имя мастера', 'danger'); return; }
+  state.masters.push({id:'m'+Date.now()+Math.random().toString(36).slice(2,6), name});
+  saveState();
+  input.value = '';
+  renderPayrollScreen();
+  showToast('Мастер добавлен', 'success');
+});
+document.getElementById('newMasterName').addEventListener('keydown', (e)=>{
+  if(e.key==='Enter') document.getElementById('addMasterBtn').click();
+});
+
+/* ---- payroll entries list ---- */
+function getPayrollPeriodRange(){
+  const type = document.getElementById('prPeriodSelect').value;
+  const now = new Date();
+  if(type==='month'){
+    return {from:firstDayOfMonth(now.getFullYear(), now.getMonth()), to:lastDayOfMonth(now.getFullYear(), now.getMonth())};
+  }
+  if(type==='prevmonth'){
+    const py = now.getMonth()===0 ? now.getFullYear()-1 : now.getFullYear();
+    const pm = now.getMonth()===0 ? 11 : now.getMonth()-1;
+    return {from:firstDayOfMonth(py, pm), to:lastDayOfMonth(py, pm)};
+  }
+  if(type==='year'){
+    return {from:`${now.getFullYear()}-01-01`, to:`${now.getFullYear()}-12-31`};
+  }
+  if(type==='custom'){
+    const from = document.getElementById('prFromDate').value || todayISO();
+    const to = document.getElementById('prToDate').value || todayISO();
+    return {from, to};
+  }
+  return null; // 'all' — no filtering
+}
+document.getElementById('prPeriodSelect').addEventListener('change', ()=>{
+  document.getElementById('prCustomRangeRow').style.display = document.getElementById('prPeriodSelect').value==='custom' ? 'flex' : 'none';
+  renderPayrollList();
+});
+document.getElementById('prFromDate').addEventListener('change', renderPayrollList);
+document.getElementById('prToDate').addEventListener('change', renderPayrollList);
+
+function renderPayrollList(){
+  const range = getPayrollPeriodRange();
+  const tbody = document.getElementById('payrollTbody');
+  let rows = state.payrollEntries.slice().sort((a,b)=>{
+    const ba = state.bookings.find(x=>x.id===a.bookingId);
+    const bb = state.bookings.find(x=>x.id===b.bookingId);
+    return (bb?.start||'').localeCompare(ba?.start||'');
+  });
+  if(range){
+    rows = rows.filter(p=>{
+      const b = state.bookings.find(x=>x.id===p.bookingId);
+      return b && b.start>=range.from && b.start<=range.to;
+    });
+  }
+  tbody.innerHTML = rows.map(p=>{
+    const b = state.bookings.find(x=>x.id===p.bookingId);
+    const info = b ? findClientCar(b.carId) : null;
+    const m = master(p.masterId);
+    const s = svc(p.serviceId);
+    return `<tr data-id="${p.id}">
+      <td>${b ? new Date(b.start+'T00:00:00').toLocaleDateString('ru-RU') : '—'}</td>
+      <td>${m ? escapeHtml(m.name) : '<span class="empty-note">мастер удалён</span>'}</td>
+      <td>${info ? info.client.name+' · '+info.car.model : '—'}</td>
+      <td>${s ? s.name : (p.serviceId||'—')}</td>
+      <td class="ltv">${Number(p.amount||0).toLocaleString('ru-RU')} ₽</td>
+      <td class="ltv" style="color:var(--green);">${Number(p.commission||0).toLocaleString('ru-RU')} ₽</td>
+      <td><button class="row-del" data-del-payroll="${p.id}" title="Удалить начисление">✕</button></td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="7"><span class="empty-note">Начислений пока нет</span></td></tr>`;
+
+  tbody.querySelectorAll('[data-del-payroll]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      if(!confirm('Удалить это начисление безвозвратно?')) return;
+      state.payrollEntries = state.payrollEntries.filter(x=>x.id!==btn.dataset.delPayroll);
+      saveState();
+      renderPayrollList();
+      renderPayrollSummary();
+      showToast('Начисление удалено', 'success');
+    });
+  });
+
+  const mobileList = document.getElementById('payrollMobileList');
+  mobileList.innerHTML = rows.map(p=>{
+    const b = state.bookings.find(x=>x.id===p.bookingId);
+    const info = b ? findClientCar(b.carId) : null;
+    const m = master(p.masterId);
+    const s = svc(p.serviceId);
+    return `<div class="record-card" data-id="${p.id}">
+      <div class="rc-title">${m ? escapeHtml(m.name) : 'мастер удалён'}</div>
+      <div class="rc-row"><span class="rc-lbl">Дата</span><span class="rc-val">${b ? new Date(b.start+'T00:00:00').toLocaleDateString('ru-RU') : '—'}</span></div>
+      <div class="rc-row"><span class="rc-lbl">Клиент / Авто</span><span class="rc-val">${info ? escapeHtml(info.client.name+' · '+info.car.model) : '—'}</span></div>
+      <div class="rc-row"><span class="rc-lbl">Услуга</span><span class="rc-val">${s ? escapeHtml(s.name) : (p.serviceId||'—')}</span></div>
+      <div class="rc-row"><span class="rc-lbl">Сумма</span><span class="rc-val ltv">${Number(p.amount||0).toLocaleString('ru-RU')} ₽</span></div>
+      <div class="rc-row"><span class="rc-lbl">Зарплата (35%)</span><span class="rc-val ltv" style="color:var(--green);">${Number(p.commission||0).toLocaleString('ru-RU')} ₽</span></div>
+      <div class="rc-actions">
+        <button class="btn btn-ghost btn-danger" data-del-payroll="${p.id}">Удалить</button>
+      </div>
+    </div>`;
+  }).join('') || `<div class="empty-note">Начислений пока нет</div>`;
+  mobileList.querySelectorAll('[data-del-payroll]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      if(!confirm('Удалить это начисление безвозвратно?')) return;
+      state.payrollEntries = state.payrollEntries.filter(x=>x.id!==btn.dataset.delPayroll);
+      saveState();
+      renderPayrollList();
+      renderPayrollSummary();
+      showToast('Начисление удалено', 'success');
+    });
+  });
+
+  renderPayrollSummary();
+}
+
+function renderPayrollSummary(){
+  const total = state.payrollEntries.reduce((s,p)=> s+Number(p.commission||0), 0);
+  const totalAmount = state.payrollEntries.reduce((s,p)=> s+Number(p.amount||0), 0);
+  document.getElementById('payrollSummaryRow').innerHTML = `
+    <div class="stat-box"><div class="num">${state.payrollEntries.length}</div><div class="lbl">Начислений всего</div></div>
+    <div class="stat-box"><div class="num" style="color:var(--green);">${total.toLocaleString('ru-RU')} ₽</div><div class="lbl">Итого к выплате</div></div>
+  `;
+}
+
+/* ---- payroll modal ---- */
+function populatePrBookingSelect(){
+  const sel = document.getElementById('prBooking');
+  const bookings = state.bookings
+    .filter(b=> b.status!=='cancelled')
+    .slice()
+    .sort((a,b)=> b.start.localeCompare(a.start));
+  if(!bookings.length){
+    sel.innerHTML = '<option value="" disabled selected>Нет доступных записей</option>';
+    return;
+  }
+  sel.innerHTML = bookings.map(b=>{
+    const info = findClientCar(b.carId);
+    const label = `${new Date(b.start+'T00:00:00').toLocaleDateString('ru-RU')} · ${info?info.client.name:'?'} · ${bookingServiceNames(b)}`;
+    return `<option value="${b.id}">${escapeHtml(label)}</option>`;
+  }).join('');
+}
+function populatePrServiceSelect(bookingId){
+  const sel = document.getElementById('prService');
+  const b = state.bookings.find(x=>x.id===bookingId);
+  const ids = b ? bookingServiceIds(b) : [];
+  if(!ids.length){
+    sel.innerHTML = '<option value="" disabled selected>Нет услуг в записи</option>';
+    return;
+  }
+  sel.innerHTML = ids.map(id=>{
+    const s = svc(id);
+    return `<option value="${id}">${s ? escapeHtml(s.name) : id}</option>`;
+  }).join('');
+}
+function updatePrCommissionPreview(){
+  const amount = Number(document.getElementById('prAmount').value) || 0;
+  document.getElementById('prCommissionPreview').value = Math.round(amount*MASTER_COMMISSION_RATE).toLocaleString('ru-RU') + ' ₽';
+}
+
+document.getElementById('newPayrollBtn').addEventListener('click', ()=>{
+  if(!state.masters.length){ showToast('Сначала добавьте хотя бы одного мастера', 'danger'); return; }
+  populatePrBookingSelect();
+  const firstBookingId = document.getElementById('prBooking').value;
+  populatePrServiceSelect(firstBookingId);
+  document.getElementById('prAmount').value = '';
+  updatePrCommissionPreview();
+  document.getElementById('payrollModalOverlay').classList.add('open');
+});
+document.getElementById('prCancel').addEventListener('click', ()=> document.getElementById('payrollModalOverlay').classList.remove('open'));
+document.getElementById('prBooking').addEventListener('change', (e)=> populatePrServiceSelect(e.target.value));
+document.getElementById('prAmount').addEventListener('input', updatePrCommissionPreview);
+
+document.getElementById('prSave').addEventListener('click', ()=>{
+  const masterId = document.getElementById('prMaster').value;
+  const bookingId = document.getElementById('prBooking').value;
+  const serviceId = document.getElementById('prService').value;
+  const amount = Number(document.getElementById('prAmount').value);
+  if(!masterId){ showToast('Выберите мастера', 'danger'); return; }
+  if(!bookingId){ showToast('Выберите запись из календаря', 'danger'); return; }
+  if(!serviceId){ showToast('Выберите услугу', 'danger'); return; }
+  if(!amount || amount<=0){ showToast('Укажите сумму за услугу', 'danger'); return; }
+  const commission = Math.round(amount*MASTER_COMMISSION_RATE);
+  state.payrollEntries.push({id:'pr'+Date.now()+Math.random().toString(36).slice(2,6), masterId, bookingId, serviceId, amount, commission});
+  saveState();
+  document.getElementById('payrollModalOverlay').classList.remove('open');
+  renderPayrollList();
+  showToast('Зарплата начислена', 'success');
+});
+
+/* ========================================================================
+   INIT
+   ======================================================================== */
+refreshBoard();
+renderClients();
+renderInspectionsList();
+renderCancelledList();
+renderIncome();
+renderWarehouse();
+renderPayrollScreen();
+</script>
+</body>
+</html>
