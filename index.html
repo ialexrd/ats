@@ -749,6 +749,7 @@ textarea.input{ width:100%; resize:vertical; font-family:inherit; line-height:1.
     </div>
   </div>
   <div class="topbar-right">
+    <button class="btn btn-ghost" id="exportSheetsBtn" title="Экспорт в Google Таблицы">В Google Таблицы</button>
     <button class="btn btn-ghost" id="logoutBtn" title="Выйти">Выйти</button>
     <button class="burger-btn" id="burgerBtn" aria-label="Меню разделов" title="Меню разделов">☰</button>
   </div>
@@ -3744,6 +3745,50 @@ document.getElementById('loginSubmit').addEventListener('click', doLogin);
 loginPassword.addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
 
 document.getElementById('logoutBtn').addEventListener('click', ()=> auth.signOut());
+
+/* ========================================================================
+   GOOGLE SHEETS EXPORT
+   ======================================================================== */
+const SHEETS_EXPORT_URL = 'https://script.google.com/macros/s/AKfycbz7ubCAWQL7cQBpV0OADy5thdV_YVjEYhD7akXqh28MSJh7yHZiqPY_vTLFtkcWK85U/exec';
+
+function buildSheetsExport(){
+  const clientsRows = [];
+  state.clients.forEach(c=>{
+    if(c.cars && c.cars.length){
+      c.cars.forEach(car=> clientsRows.push([c.name, c.phone, car.model, car.plate]));
+    } else {
+      clientsRows.push([c.name, c.phone, '', '']);
+    }
+  });
+  const bookingsRows = state.bookings.map(b=>[
+    client(b.clientId)?.name || '', bookingServiceNames(b), b.start, b.startTime,
+    b.price, b.prepayment, b.status, b.paid ? 'Да' : 'Нет',
+  ]);
+  const expensesRows = state.expenses.map(e=>[
+    e.date, expCategoryInfo(e.category).name, e.amount, e.note || '',
+  ]);
+  const payrollRows = state.payrollEntries.map(p=>[
+    master(p.masterId)?.name || '', svc(p.serviceId)?.name || p.serviceId, p.amount, p.commission,
+  ]);
+  return {
+    sheets: [
+      {name:'Клиенты', headers:['Имя','Телефон','Авто','Госномер'], rows: clientsRows},
+      {name:'Записи',  headers:['Клиент','Услуги','Дата','Время','Цена','Предоплата','Статус','Оплачено'], rows: bookingsRows},
+      {name:'Расходы', headers:['Дата','Категория','Сумма','Комментарий'], rows: expensesRows},
+      {name:'Зарплата',headers:['Мастер','Услуга','Сумма','Комиссия'], rows: payrollRows},
+    ]
+  };
+}
+
+document.getElementById('exportSheetsBtn').addEventListener('click', ()=>{
+  if(!SHEETS_EXPORT_URL || SHEETS_EXPORT_URL.includes('PASTE_')){
+    showToast('Google Таблицы ещё не подключены', 'danger');
+    return;
+  }
+  fetch(SHEETS_EXPORT_URL, {method:'POST', mode:'no-cors', body: JSON.stringify(buildSheetsExport())})
+    .then(()=> showToast('Экспорт отправлен — проверьте таблицу через пару секунд', 'success'))
+    .catch(()=> showToast('Не удалось отправить экспорт — проверьте подключение', 'danger'));
+});
 
 auth.onAuthStateChanged(async user=>{
   if(user){
