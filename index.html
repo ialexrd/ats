@@ -751,7 +751,6 @@ textarea.input{ width:100%; resize:vertical; font-family:inherit; line-height:1.
     </div>
   </div>
   <div class="topbar-right">
-    <button class="btn btn-ghost" id="exportSheetsBtn" title="Экспорт в Google Таблицы">В Google Таблицы</button>
     <button class="btn btn-ghost" id="logoutBtn" title="Выйти">Выйти</button>
     <button class="burger-btn" id="burgerBtn" aria-label="Меню разделов" title="Меню разделов">☰</button>
   </div>
@@ -1583,7 +1582,10 @@ async function loadState(){
   await stateDocRef.set(seeded);
   return seeded;
 }
-function saveState(){ stateDocRef.set(state).catch(e=> console.error('saveState failed', e)); }
+function saveState(){
+  stateDocRef.set(state).catch(e=> console.error('saveState failed', e));
+  scheduleSheetsExport();
+}
 
 let state = null;
 let weekStart = todayISO(); // start of visible 14-day range
@@ -3782,15 +3784,16 @@ function buildSheetsExport(){
   };
 }
 
-document.getElementById('exportSheetsBtn').addEventListener('click', ()=>{
-  if(!SHEETS_EXPORT_URL || SHEETS_EXPORT_URL.includes('PASTE_')){
-    showToast('Google Таблицы ещё не подключены', 'danger');
-    return;
-  }
+function exportToSheets(){
+  if(!SHEETS_EXPORT_URL || SHEETS_EXPORT_URL.includes('PASTE_')) return;
   fetch(SHEETS_EXPORT_URL, {method:'POST', mode:'no-cors', body: JSON.stringify(buildSheetsExport())})
-    .then(()=> showToast('Экспорт отправлен — проверьте таблицу через пару секунд', 'success'))
-    .catch(()=> showToast('Не удалось отправить экспорт — проверьте подключение', 'danger'));
-});
+    .catch(e=> console.error('sheets export failed', e));
+}
+let sheetsExportTimer = null;
+function scheduleSheetsExport(){
+  clearTimeout(sheetsExportTimer);
+  sheetsExportTimer = setTimeout(exportToSheets, 2000);
+}
 
 auth.onAuthStateChanged(async user=>{
   if(user){
