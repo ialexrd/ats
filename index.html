@@ -1257,6 +1257,10 @@ textarea.input{ width:100%; resize:vertical; font-family:inherit; line-height:1.
       </div>
     </div>
     <div class="field">
+      <label>Количество дней на услугу</label>
+      <input class="input" type="number" id="bkDuration" min="1" value="1">
+    </div>
+    <div class="field">
       <label>Дата начала</label>
       <input class="input" type="date" id="bkDate">
     </div>
@@ -1306,6 +1310,10 @@ textarea.input{ width:100%; resize:vertical; font-family:inherit; line-height:1.
         <label>Предоплата, ₽</label>
         <input class="input" type="number" id="bdPrepay">
       </div>
+    </div>
+    <div class="field">
+      <label>Количество дней на услугу</label>
+      <input class="input" type="number" id="bdDuration" min="1">
     </div>
     <div class="field">
       <label>Статус</label>
@@ -1429,6 +1437,7 @@ const ADDONS = [
   {id:'addon-leather-chem',     name:'Химчистка кожи'},
   {id:'addon-seats-chem',       name:'Химчистка сидений'},
   {id:'addon-carpet-chem',      name:'Химчистка ковролина'},
+  {id:'addon-ceiling-chem',     name:'Химчистка потолка'},
   {id:'addon-trunk-chem',       name:'Химчистка Багажника'},
   {id:'addon-headlight-wrap',   name:'Оклейка фар'},
   {id:'addon-risk-wrap',        name:'Оклейка зон риска'},
@@ -1609,16 +1618,14 @@ function bookingServiceIds(b){
   return (b.services && b.services.length) ? b.services : (b.serviceId ? [b.serviceId] : []);
 }
 function bookingServiceNames(b){
-  const names = bookingServiceIds(b).map(id=> svc(id)?.name).filter(Boolean);
+  const names = bookingServiceIds(b).map(id=> svc(id)?.name || id).filter(Boolean);
   return names.length ? names.join(' + ') : '—';
 }
 function totalDuration(b){
-  const ids = bookingServiceIds(b);
-  const sum = ids.reduce((s,id)=> s + (svc(id)?.duration||1), 0);
-  return Math.max(1, sum);
+  return Math.max(1, Number(b.duration)||1);
 }
 function bookingAddonNames(b){
-  return (b.addons||[]).map(id=> ADDONS.find(a=>a.id===id)?.name).filter(Boolean);
+  return (b.addons||[]).map(id=> ADDONS.find(a=>a.id===id)?.name || id).filter(Boolean);
 }
 function bookingPrice(b){
   const v = b.price;
@@ -2193,22 +2200,50 @@ function fillPostOptions(){
   sel.innerHTML = POSTS.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
 }
 
+/* ---- catalog <select> with a "type your own" fallback option, shared by
+   the services and add-ons pickers below ---- */
+const CUSTOM_OPTION = '__custom__';
+function catalogOptionsHtml(catalog, selectedValue){
+  return catalog.map(item=>`<option value="${item.id}" ${item.id===selectedValue?'selected':''}>${item.name}</option>`).join('')
+    + `<option value="${CUSTOM_OPTION}" ${selectedValue===CUSTOM_OPTION?'selected':''}>Другое (вписать вручную)</option>`;
+}
+function wireCustomToggle(selectEl, inputEl){
+  selectEl.addEventListener('change', ()=>{
+    const show = selectEl.value===CUSTOM_OPTION;
+    inputEl.style.display = show ? 'block' : 'none';
+    if(show) inputEl.focus();
+  });
+}
+function readCatalogValue(selectEl, inputEl){
+  return selectEl.value===CUSTOM_OPTION ? inputEl.value.trim() : selectEl.value;
+}
+
 /* ---- multiple services on one booking ---- */
 function getSelectedServiceIds(){
-  return [...document.querySelectorAll('.bk-svc-select')].map(s=>s.value);
+  return [...document.querySelectorAll('.bk-svc-select')].map(sel=>
+    readCatalogValue(sel, document.querySelector(`.bk-svc-custom[data-idx="${sel.dataset.idx}"]`)));
 }
 function renderServiceRows(selectedIds){
   const list = document.getElementById('bkServicesList');
   const ids = (selectedIds && selectedIds.length) ? selectedIds : [SERVICES[0].id];
-  list.innerHTML = ids.map((id,idx)=>`
+  list.innerHTML = ids.map((id,idx)=>{
+    const isKnown = SERVICES.some(s=>s.id===id);
+    const selectValue = isKnown ? id : CUSTOM_OPTION;
+    const customValue = (!isKnown && id!==CUSTOM_OPTION) ? id : '';
+    return `
     <div class="svc-row">
       <select class="input bk-svc-select" data-idx="${idx}">
-        ${SERVICES.map(s=>`<option value="${s.id}" ${s.id===id?'selected':''}>${s.name}</option>`).join('')}
+        ${catalogOptionsHtml(SERVICES, selectValue)}
       </select>
       ${ids.length>1 ? `<button type="button" class="row-del bk-svc-remove" data-idx="${idx}" title="Убрать услугу">✕</button>` : ''}
     </div>
-  `).join('');
-  list.querySelectorAll('.bk-svc-select').forEach(sel=> sel.addEventListener('change', updateBkServiceHint));
+    <input class="input bk-svc-custom" data-idx="${idx}" placeholder="Введите название услуги" value="${escapeHtml(customValue)}" style="width:100%;margin:-2px 0 6px;${selectValue===CUSTOM_OPTION?'':'display:none;'}">`;
+  }).join('');
+  list.querySelectorAll('.bk-svc-select').forEach(sel=>{
+    sel.addEventListener('change', updateBkServiceHint);
+    const input = list.querySelector(`.bk-svc-custom[data-idx="${sel.dataset.idx}"]`);
+    if(input){ wireCustomToggle(sel, input); input.addEventListener('input', updateBkServiceHint); }
+  });
   list.querySelectorAll('.bk-svc-remove').forEach(btn=> btn.addEventListener('click', ()=>{
     const current = getSelectedServiceIds();
     current.splice(Number(btn.dataset.idx),1);
@@ -2218,9 +2253,8 @@ function renderServiceRows(selectedIds){
 }
 function updateBkServiceHint(){
   const ids = getSelectedServiceIds();
-  const totalDur = ids.reduce((s,id)=> s+(svc(id)?.duration||1),0) || 1;
   const refPrice = ids.reduce((s,id)=> s+(svc(id)?.price||0),0);
-  document.getElementById('bkSvcHint').textContent = `${totalDur} ${totalDur===1?'день':'дня'} · ориентировочно ${refPrice.toLocaleString('ru-RU')} ₽ — стоимость впишите вручную ниже`;
+  document.getElementById('bkSvcHint').textContent = `Ориентировочно ${refPrice.toLocaleString('ru-RU')} ₽ — стоимость и срок впишите вручную ниже`;
 }
 document.getElementById('bkAddServiceBtn').addEventListener('click', ()=>{
   const current = getSelectedServiceIds();
@@ -2230,19 +2264,29 @@ document.getElementById('bkAddServiceBtn').addEventListener('click', ()=>{
 
 /* ---- additional services (Дополнительные услуги) ---- */
 function getSelectedAddonIds(){
-  return [...document.querySelectorAll('.bk-addon-select')].map(s=>s.value);
+  return [...document.querySelectorAll('.bk-addon-select')].map(sel=>
+    readCatalogValue(sel, document.querySelector(`.bk-addon-custom[data-idx="${sel.dataset.idx}"]`)));
 }
 function renderAddonRows(selectedIds){
   const list = document.getElementById('bkAddonsList');
   const ids = selectedIds || [];
-  list.innerHTML = ids.map((id,idx)=>`
+  list.innerHTML = ids.map((id,idx)=>{
+    const isKnown = ADDONS.some(a=>a.id===id);
+    const selectValue = isKnown ? id : CUSTOM_OPTION;
+    const customValue = (!isKnown && id!==CUSTOM_OPTION) ? id : '';
+    return `
     <div class="svc-row">
       <select class="input bk-addon-select" data-idx="${idx}">
-        ${ADDONS.map(a=>`<option value="${a.id}" ${a.id===id?'selected':''}>${a.name}</option>`).join('')}
+        ${catalogOptionsHtml(ADDONS, selectValue)}
       </select>
       <button type="button" class="row-del bk-addon-remove" data-idx="${idx}" title="Убрать">✕</button>
     </div>
-  `).join('') || `<div class="empty-note" style="margin:2px 0 4px;">Не выбрано</div>`;
+    <input class="input bk-addon-custom" data-idx="${idx}" placeholder="Введите название доп. услуги" value="${escapeHtml(customValue)}" style="width:100%;margin:-2px 0 6px;${selectValue===CUSTOM_OPTION?'':'display:none;'}">`;
+  }).join('') || `<div class="empty-note" style="margin:2px 0 4px;">Не выбрано</div>`;
+  list.querySelectorAll('.bk-addon-select').forEach(sel=>{
+    const input = list.querySelector(`.bk-addon-custom[data-idx="${sel.dataset.idx}"]`);
+    if(input) wireCustomToggle(sel, input);
+  });
   list.querySelectorAll('.bk-addon-remove').forEach(btn=> btn.addEventListener('click', ()=>{
     const current = getSelectedAddonIds();
     current.splice(Number(btn.dataset.idx),1);
@@ -2268,6 +2312,7 @@ function openBookingModal(prefillClientId, prefillServiceId){
   document.getElementById('bkTime').value = '09:00';
   document.getElementById('bkPrice').value = '';
   document.getElementById('bkPrepay').value = '';
+  document.getElementById('bkDuration').value = 1;
   document.getElementById('bkSource').value = '';
   document.getElementById('bkNotes').value = '';
   bkModal.classList.add('open');
@@ -2287,7 +2332,8 @@ document.getElementById('bkSave').addEventListener('click', ()=>{
   const notes = document.getElementById('bkNotes').value.trim();
   let clientId, carId;
 
-  if(!serviceIds.length){ showToast('Выберите хотя бы одну услугу', 'danger'); return; }
+  if(!serviceIds.length || serviceIds.some(id=>!id)){ showToast('Укажите название каждой услуги', 'danger'); return; }
+  if(addonIds.some(id=>!id)){ showToast('Укажите название каждой доп. услуги', 'danger'); return; }
 
   if(clientSel === '__new__'){
     const name = document.getElementById('bkNewName').value.trim();
@@ -2320,7 +2366,7 @@ document.getElementById('bkSave').addEventListener('click', ()=>{
 
   if(!start){ showToast('Укажите дату', 'danger'); return; }
 
-  const duration = serviceIds.reduce((s,id)=> s+(svc(id)?.duration||1),0) || 1;
+  const duration = Math.max(1, Number(document.getElementById('bkDuration').value) || 1);
   const check = canPlace(postId, start, duration, null);
   if(!check.ok){
     showToast(`Пост «${post(postId).name}» занят на ${new Date(check.day+'T00:00:00').toLocaleDateString('ru-RU')}`, 'danger');
@@ -2329,7 +2375,7 @@ document.getElementById('bkSave').addEventListener('click', ()=>{
   state.bookings.push({
     id:'b'+Date.now(), clientId, carId,
     services: serviceIds, addons: addonIds,
-    postId, start, startTime,
+    postId, start, startTime, duration,
     price: priceInput!=='' ? Number(priceInput) : 0,
     prepayment: prepayInput!=='' ? Number(prepayInput) : 0,
     source,
@@ -2351,20 +2397,30 @@ const bdOverlay = document.getElementById('bookingDetailOverlay');
 
 /* ---- editable service list inside the booking-detail popup ---- */
 function getBdSelectedServiceIds(){
-  return [...document.querySelectorAll('.bd-svc-select')].map(s=>s.value);
+  return [...document.querySelectorAll('.bd-svc-select')].map(sel=>
+    readCatalogValue(sel, document.querySelector(`.bd-svc-custom[data-idx="${sel.dataset.idx}"]`)));
 }
 function renderBdServiceRows(selectedIds){
   const list = document.getElementById('bdServicesList');
   const ids = (selectedIds && selectedIds.length) ? selectedIds : [SERVICES[0].id];
-  list.innerHTML = ids.map((id,idx)=>`
+  list.innerHTML = ids.map((id,idx)=>{
+    const isKnown = SERVICES.some(s=>s.id===id);
+    const selectValue = isKnown ? id : CUSTOM_OPTION;
+    const customValue = (!isKnown && id!==CUSTOM_OPTION) ? id : '';
+    return `
     <div class="svc-row">
       <select class="input bd-svc-select" data-idx="${idx}">
-        ${SERVICES.map(s=>`<option value="${s.id}" ${s.id===id?'selected':''}>${s.name}</option>`).join('')}
+        ${catalogOptionsHtml(SERVICES, selectValue)}
       </select>
       ${ids.length>1 ? `<button type="button" class="row-del bd-svc-remove" data-idx="${idx}" title="Убрать услугу">✕</button>` : ''}
     </div>
-  `).join('');
-  list.querySelectorAll('.bd-svc-select').forEach(sel=> sel.addEventListener('change', updateBdServiceHint));
+    <input class="input bd-svc-custom" data-idx="${idx}" placeholder="Введите название услуги" value="${escapeHtml(customValue)}" style="width:100%;margin:-2px 0 6px;${selectValue===CUSTOM_OPTION?'':'display:none;'}">`;
+  }).join('');
+  list.querySelectorAll('.bd-svc-select').forEach(sel=>{
+    sel.addEventListener('change', updateBdServiceHint);
+    const input = list.querySelector(`.bd-svc-custom[data-idx="${sel.dataset.idx}"]`);
+    if(input){ wireCustomToggle(sel, input); input.addEventListener('input', updateBdServiceHint); }
+  });
   list.querySelectorAll('.bd-svc-remove').forEach(btn=> btn.addEventListener('click', ()=>{
     const current = getBdSelectedServiceIds();
     current.splice(Number(btn.dataset.idx),1);
@@ -2375,8 +2431,8 @@ function renderBdServiceRows(selectedIds){
 }
 function updateBdServiceHint(){
   const ids = getBdSelectedServiceIds();
-  const totalDur = ids.reduce((s,id)=> s+(svc(id)?.duration||1),0) || 1;
-  document.getElementById('bdSvcHint').textContent = `${totalDur} ${totalDur===1?'день':'дня'} суммарно`;
+  const refPrice = ids.reduce((s,id)=> s+(svc(id)?.price||0),0);
+  document.getElementById('bdSvcHint').textContent = refPrice ? `Ориентировочно ${refPrice.toLocaleString('ru-RU')} ₽` : '';
 }
 document.getElementById('bdAddServiceBtn').addEventListener('click', ()=>{
   const current = getBdSelectedServiceIds();
@@ -2402,6 +2458,7 @@ function openBookingDetail(bookingId){
   renderBdServiceRows(bookingServiceIds(b));
   document.getElementById('bdPrice').value = bookingPrice(b);
   document.getElementById('bdPrepay').value = b.prepayment || '';
+  document.getElementById('bdDuration').value = b.duration || 1;
   document.getElementById('bdDate').value = b.start;
   document.getElementById('bdTime').value = b.startTime || '09:00';
   document.getElementById('bdStatus').value = b.status==='done' ? 'done' : 'scheduled';
@@ -2454,8 +2511,8 @@ document.getElementById('bdSave').addEventListener('click', ()=>{
   const b = state.bookings.find(x=>x.id===currentBookingDetailId);
   if(!b) return;
   const newServices = getBdSelectedServiceIds();
-  if(!newServices.length){ showToast('Выберите хотя бы одну услугу', 'danger'); return; }
-  const newDuration = newServices.reduce((s,id)=> s+(svc(id)?.duration||1),0) || 1;
+  if(!newServices.length || newServices.some(id=>!id)){ showToast('Укажите название каждой услуги', 'danger'); return; }
+  const newDuration = Math.max(1, Number(document.getElementById('bdDuration').value) || 1);
   const newDate = document.getElementById('bdDate').value;
   if(!newDate){ showToast('Укажите дату записи', 'danger'); return; }
   const check = canPlace(b.postId, newDate, newDuration, b.id);
@@ -2465,6 +2522,7 @@ document.getElementById('bdSave').addEventListener('click', ()=>{
   }
   b.services = newServices;
   b.start = newDate;
+  b.duration = newDuration;
   b.price = Number(document.getElementById('bdPrice').value) || 0;
   b.prepayment = Number(document.getElementById('bdPrepay').value) || 0;
   b.startTime = document.getElementById('bdTime').value || b.startTime || '09:00';
