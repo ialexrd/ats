@@ -350,6 +350,24 @@ textarea.input{ width:100%; resize:vertical; font-family:inherit; line-height:1.
 .addon-item{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text); cursor:pointer; }
 .svc-row{ display:flex; gap:8px; margin-bottom:6px; }
 .svc-row select{ flex:1; }
+.client-search-results{
+  position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:10;
+  background:var(--surface-raised); border:1px solid var(--line); border-radius:10px;
+  max-height:220px; overflow-y:auto; display:none; box-shadow:0 12px 28px rgba(0,0,0,.4);
+}
+.client-search-results.open{ display:block; }
+.client-result-item{ padding:9px 12px; cursor:pointer; font-size:13px; }
+.client-result-item:hover, .client-result-item.active{ background:var(--surface-hover); }
+.client-result-item .cr-name{ color:var(--text); }
+.client-result-item .cr-phone{ color:var(--text-muted); font-size:11px; margin-top:2px; }
+.client-result-empty{ padding:9px 12px; font-size:12px; color:var(--text-muted); }
+.client-chip{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  background:var(--surface-raised); border:1px solid var(--line); border-radius:10px;
+  padding:9px 12px; font-size:13px;
+}
+.client-chip .cc-clear{ background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:15px; line-height:1; }
+.client-chip .cc-clear:hover{ color:var(--text); }
 
 /* ---------- Inspections (Приёмка) ---------- */
 .status-pill{
@@ -1199,7 +1217,13 @@ textarea.input{ width:100%; resize:vertical; font-family:inherit; line-height:1.
     <h3>Новая запись</h3>
     <div class="field">
       <label>Клиент</label>
-      <select class="input" id="bkClient"></select>
+      <input type="hidden" id="bkClient">
+      <div id="bkClientPicker" style="position:relative;">
+        <input class="input" id="bkClientSearch" placeholder="Поиск по имени или телефону..." autocomplete="off">
+        <div id="bkClientResults" class="client-search-results"></div>
+      </div>
+      <div id="bkClientChip" class="client-chip" style="display:none;"></div>
+      <button type="button" class="btn btn-ghost" id="bkNewClientBtn" style="font-size:12px;padding:6px 12px;margin-top:6px;">+ Новый клиент</button>
     </div>
     <div class="field-row" id="bkNewNameRow" style="display:none;">
       <div class="field">
@@ -2156,25 +2180,78 @@ window.addEventListener('resize', updateNewBookingBtnLabel);
 updateNewBookingBtnLabel();
 
 function fillBookingClientOptions(){
-  const sel = document.getElementById('bkClient');
-  sel.innerHTML = state.clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')
-    + `<option value="__new__">+ Новый клиент</option>`;
+  document.getElementById('bkClient').value = '';
+  document.getElementById('bkClientSearch').value = '';
+  document.getElementById('bkClientSearch').style.display = '';
+  document.getElementById('bkNewClientBtn').style.display = '';
+  document.getElementById('bkClientChip').style.display = 'none';
+  hideBkClientResults();
 }
+function hideBkClientResults(){
+  const box = document.getElementById('bkClientResults');
+  box.classList.remove('open');
+  box.innerHTML = '';
+}
+function renderBkClientResults(query){
+  const box = document.getElementById('bkClientResults');
+  const q = query.trim().toLowerCase();
+  if(!q){ hideBkClientResults(); return; }
+  const matches = state.clients.filter(c=>
+    c.name.toLowerCase().includes(q) || (c.phone||'').replace(/\D/g,'').includes(q.replace(/\D/g,''))
+  ).slice(0, 8);
+  box.innerHTML = matches.length
+    ? matches.map(c=>`<div class="client-result-item" data-id="${c.id}"><div class="cr-name">${c.name}</div><div class="cr-phone">${c.phone||''}</div></div>`).join('')
+    : `<div class="client-result-empty">Никого не найдено</div>`;
+  box.querySelectorAll('.client-result-item').forEach(el=> el.addEventListener('click', ()=> selectBkClient(el.dataset.id)));
+  box.classList.add('open');
+}
+function selectBkClient(id){
+  const c = client(id);
+  if(!c) return;
+  document.getElementById('bkClient').value = id;
+  document.getElementById('bkClientSearch').style.display = 'none';
+  document.getElementById('bkNewClientBtn').style.display = 'none';
+  hideBkClientResults();
+  const chip = document.getElementById('bkClientChip');
+  chip.style.display = 'flex';
+  chip.innerHTML = `<span>${c.name} · ${c.phone||'—'}</span><button type="button" class="cc-clear" id="bkClientClear">✕</button>`;
+  document.getElementById('bkClientClear').addEventListener('click', ()=>{ fillBookingClientOptions(); onBkClientChange(); });
+  onBkClientChange();
+}
+function selectBkNewClient(){
+  document.getElementById('bkClient').value = '__new__';
+  document.getElementById('bkClientSearch').style.display = 'none';
+  document.getElementById('bkNewClientBtn').style.display = 'none';
+  hideBkClientResults();
+  const chip = document.getElementById('bkClientChip');
+  chip.style.display = 'flex';
+  chip.innerHTML = `<span>+ Новый клиент</span><button type="button" class="cc-clear" id="bkClientClear">✕</button>`;
+  document.getElementById('bkClientClear').addEventListener('click', ()=>{ fillBookingClientOptions(); onBkClientChange(); });
+  onBkClientChange();
+}
+document.getElementById('bkClientSearch').addEventListener('input', e=> renderBkClientResults(e.target.value));
+document.getElementById('bkNewClientBtn').addEventListener('click', selectBkNewClient);
+document.addEventListener('click', e=>{
+  if(!document.getElementById('bkClientPicker').contains(e.target)) hideBkClientResults();
+});
 function onBkClientChange(){
   const val = document.getElementById('bkClient').value;
   const isNew = val === '__new__';
+  const hasClient = val !== '' && !isNew;
   document.getElementById('bkNewNameRow').style.display = isNew ? 'flex' : 'none';
-  document.getElementById('bkCarField').style.display = isNew ? 'none' : 'block';
+  document.getElementById('bkCarField').style.display = hasClient ? 'block' : 'none';
   document.getElementById('bkNewCarRow').style.display = isNew ? 'flex' : 'none';
   if(isNew){
     document.getElementById('bkPhone').value = '';
     document.getElementById('bkNewName').value = '';
     document.getElementById('bkNewPlate').value = '';
     document.getElementById('bkNewModel').value = '';
-  } else {
+  } else if(hasClient){
     const c = client(val);
     document.getElementById('bkPhone').value = c ? c.phone : '';
     fillBookingCarOptions();
+  } else {
+    document.getElementById('bkPhone').value = '';
   }
 }
 function fillBookingCarOptions(){
@@ -2299,15 +2376,13 @@ document.getElementById('bkAddAddonBtn').addEventListener('click', ()=>{
   renderAddonRows(current);
 });
 
-document.getElementById('bkClient').addEventListener('change', onBkClientChange);
 
 function openBookingModal(prefillClientId, prefillServiceId){
   fillBookingClientOptions();
   fillPostOptions();
   renderServiceRows(prefillServiceId ? [prefillServiceId] : undefined);
   renderAddonRows();
-  if(prefillClientId) document.getElementById('bkClient').value = prefillClientId;
-  onBkClientChange();
+  if(prefillClientId) selectBkClient(prefillClientId); else onBkClientChange();
   document.getElementById('bkDate').value = todayISO();
   document.getElementById('bkTime').value = '09:00';
   document.getElementById('bkPrice').value = '';
