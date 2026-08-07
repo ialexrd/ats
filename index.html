@@ -1597,6 +1597,11 @@ const db = firebase.firestore();
 db.enablePersistence().catch(()=>{}); // ignore: unsupported browser or multiple tabs open
 const stateDocRef = db.collection('crm').doc('state');
 
+// Tracks the last server revision this tab has actually seen, so a save
+// from a stale tab (e.g. after switching accounts without reloading) fails
+// loudly instead of silently overwriting newer data written elsewhere.
+let knownRev = null;
+
 async function loadState(){
   // cache-first: paint instantly from the local IndexedDB cache if we have one,
   // then quietly refresh from the server and re-render if anything changed.
@@ -1604,22 +1609,47 @@ async function loadState(){
     const cacheSnap = await stateDocRef.get({source:'cache'});
     if(cacheSnap.exists){
       const cached = normalizeState(cacheSnap.data());
+      knownRev = cached._rev || 0;
       stateDocRef.get({source:'server'}).then(snap=>{
-        if(snap.exists){ state = normalizeState(snap.data()); renderAllScreens(); }
+        if(snap.exists){
+          state = normalizeState(snap.data());
+          knownRev = state._rev || 0;
+          renderAllScreens();
+        }
       }).catch(()=>{});
       return cached;
     }
   }catch(e){}
   const snap = await stateDocRef.get();
   if(snap.exists){
-    return normalizeState(snap.data());
+    const data = normalizeState(snap.data());
+    knownRev = data._rev || 0;
+    return data;
   }
   const seeded = seedData();
+  seeded._rev = 1;
   await stateDocRef.set(seeded);
+  knownRev = 1;
   return seeded;
 }
 function saveState(){
-  stateDocRef.set(state).catch(e=> console.error('saveState failed', e));
+  db.runTransaction(async tx=>{
+    const snap = await tx.get(stateDocRef);
+    const serverRev = snap.exists ? (snap.data()._rev || 0) : 0;
+    if(knownRev !== null && serverRev !== knownRev){
+      throw new Error('STALE_WRITE');
+    }
+    const newRev = serverRev + 1;
+    state._rev = newRev;
+    tx.set(stateDocRef, state);
+    knownRev = newRev;
+  }).catch(e=>{
+    if(e && e.message === 'STALE_WRITE'){
+      showToast('Данные изменились в другом месте — перезагрузите страницу (Cmd+R) и повторите действие', 'danger');
+    } else {
+      console.error('saveState failed', e);
+    }
+  });
   scheduleSheetsExport();
 }
 
@@ -1788,6 +1818,11 @@ document.addEventListener('click', (e)=>{
    BOARD RENDER
    ======================================================================== */
 const DOW = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+function dayHeadLabel(iso, dow){
+  if(iso === todayISO()) return 'Сегодня';
+  if(iso === addDays(todayISO(),1)) return 'Завтра';
+  return DOW[dow];
+}
 
 function renderBoard(){
   const boardEl = document.getElementById('boardEl');
@@ -1807,7 +1842,7 @@ function renderBoard(){
     const d = new Date(iso+'T00:00:00');
     const cell = document.createElement('div');
     cell.className = 'day-head' + (d.getDay()===0||d.getDay()===6?' weekend':'') + (iso===todayISO()?' today':'');
-    cell.innerHTML = `<div class="dow">${DOW[d.getDay()]}</div><div class="dnum">${d.getDate()}</div>`;
+    cell.innerHTML = `<div class="dow">${dayHeadLabel(iso, d.getDay())}</div><div class="dnum">${d.getDate()}</div>`;
     header.appendChild(cell);
   }
   boardEl.appendChild(header);
@@ -2014,6 +2049,11 @@ document.getElementById('mViewListBtn').addEventListener('click', ()=> setMobile
 
 /* ---- mobile booking list (period-based) ---- */
 const MCAL_DOW_LOWER = ['вс','пн','вт','ср','чт','пт','сб'];
+function relDayLabelLower(iso, dow){
+  if(iso === todayISO()) return 'сегодня';
+  if(iso === addDays(todayISO(),1)) return 'завтра';
+  return MCAL_DOW_LOWER[dow];
+}
 
 function getMobileListPeriodRange(){
   const type = document.getElementById('mListPeriodSelect').value;
@@ -2053,7 +2093,7 @@ function renderMobileBookingList(){
     return `<div class="mobile-booking-card" data-id="${b.id}">
       <div class="mb-content">
         <div class="mb-title">${info ? escapeHtml(info.car.model+' · '+info.car.plate) : '—'}</div>
-        <div class="mb-datetime">${d.toLocaleDateString('ru-RU')} (${MCAL_DOW_LOWER[d.getDay()]}) ${b.startTime||''}</div>
+        <div class="mb-datetime">${d.toLocaleDateString('ru-RU')} (${relDayLabelLower(b.start, d.getDay())}) ${b.startTime||''}</div>
         <div class="mb-client-row">
           <span class="mb-client">${info ? escapeHtml(info.client.name) : '—'} · <a href="tel:+${digits}" class="mb-phone" data-stop>${info ? escapeHtml(info.client.phone) : ''}</a></span>
           <span class="mb-price">${Number(bookingPrice(b)||0).toLocaleString('ru-RU')} ₽</span>
@@ -2196,8 +2236,9 @@ function renderBkClientResults(query){
   const box = document.getElementById('bkClientResults');
   const q = query.trim().toLowerCase();
   if(!q){ hideBkClientResults(); return; }
+  const qDigits = q.replace(/\D/g,'');
   const matches = state.clients.filter(c=>
-    c.name.toLowerCase().includes(q) || (c.phone||'').replace(/\D/g,'').includes(q.replace(/\D/g,''))
+    c.name.toLowerCase().includes(q) || (qDigits && (c.phone||'').replace(/\D/g,'').includes(qDigits))
   ).slice(0, 8);
   box.innerHTML = matches.length
     ? matches.map(c=>`<div class="client-result-item" data-id="${c.id}"><div class="cr-name">${c.name}</div><div class="cr-phone">${c.phone||''}</div></div>`).join('')
@@ -2572,14 +2613,24 @@ function openBookingDetail(bookingId){
     });
   }
 
+  applyBdRoleRestrictions();
   bdOverlay.classList.add('open');
+}
+function applyBdRoleRestrictions(){
+  const readOnlyIds = ['bdDate','bdTime','bdPrice','bdPrepay','bdDuration','bdStatus','bdPaid','bdSource','bdNotes'];
+  readOnlyIds.forEach(id=> document.getElementById(id).disabled = isRestrictedRole);
+  document.querySelectorAll('.bd-svc-select').forEach(el=> el.disabled = isRestrictedRole);
+  document.querySelectorAll('.bd-svc-remove').forEach(el=> el.classList.toggle('hidden', isRestrictedRole));
+  document.getElementById('bdAddServiceBtn').classList.toggle('hidden', isRestrictedRole);
+  document.getElementById('bdSave').classList.toggle('hidden', isRestrictedRole);
+  document.getElementById('bdCancelBooking').classList.toggle('hidden', isRestrictedRole);
 }
 document.getElementById('bdCancel').addEventListener('click', ()=> bdOverlay.classList.remove('open'));
 document.getElementById('bdOpenClient').addEventListener('click', ()=>{
   const b = state.bookings.find(x=>x.id===currentBookingDetailId);
   if(!b) return;
   bdOverlay.classList.remove('open');
-  showScreen('clients');
+  if(!isRestrictedRole) showScreen('clients');
   openClientDrawer(b.clientId);
 });
 document.getElementById('bdSave').addEventListener('click', ()=>{
@@ -2896,10 +2947,10 @@ function openClientDrawer(clientId){
       <div class="who">Напоминание</div>
       <div class="what">${rem.service} — повтор ${rem.daysLeft<0?'просрочен на '+Math.abs(rem.daysLeft)+' дн.':'через '+rem.daysLeft+' дн.'}</div>
     </div>`).join('')}
-    <button class="btn btn-primary" id="drawerNewBooking" style="width:100%;margin-bottom:18px;">+ Новая запись</button>
+    <button class="btn btn-primary${isRestrictedRole?' hidden':''}" id="drawerNewBooking" style="width:100%;margin-bottom:18px;">+ Новая запись</button>
     <h3>История обслуживания</h3>
     ${timeline}
-    <button class="btn btn-ghost btn-danger" id="drawerDeleteClient" style="width:100%;margin-top:18px;">Удалить клиента</button>
+    <button class="btn btn-ghost btn-danger${isRestrictedRole?' hidden':''}" id="drawerDeleteClient" style="width:100%;margin-top:18px;">Удалить клиента</button>
   `;
   document.getElementById('drawerCloseBtn').addEventListener('click', ()=> drawerOverlay.classList.remove('open'));
   document.getElementById('drawerDeleteClient').addEventListener('click', ()=>{
@@ -3931,12 +3982,31 @@ function scheduleSheetsExport(){
   sheetsExportTimer = setTimeout(exportToSheets, 2000);
 }
 
+/* ========================================================================
+   ROLES — masters get a read-only calendar + client view, can only
+   create/edit приёмка (vehicle intake). UI-level restriction only:
+   anyone with the login could still write via devtools, this just
+   keeps the normal interface honest for trusted staff.
+   ======================================================================== */
+const MASTER_EMAILS = ['master@mail.ru'];
+let isRestrictedRole = false;
+
+function applyRoleRestrictions(){
+  document.querySelectorAll('.nav button').forEach(btn=>{
+    const allowed = !isRestrictedRole || btn.dataset.screen==='board' || btn.dataset.screen==='inspections';
+    btn.classList.toggle('hidden', !allowed);
+  });
+  document.getElementById('newBookingBtn').classList.toggle('hidden', isRestrictedRole);
+}
+
 auth.onAuthStateChanged(async user=>{
   if(user){
+    isRestrictedRole = MASTER_EMAILS.includes((user.email||'').toLowerCase());
     loginOverlay.classList.add('hidden');
     appRoot.classList.remove('hidden');
     loginPassword.value = '';
     await bootApp();
+    applyRoleRestrictions();
   } else {
     appRoot.classList.add('hidden');
     loginOverlay.classList.remove('hidden');
