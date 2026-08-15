@@ -27,6 +27,7 @@
   --green:#6fcf97;
   --danger:#e8685d;
   --purple:#a78bfa;
+  --pink:#f472b6;
   --font-display:'Big Shoulders Display', sans-serif;
   --font-body:'Inter', sans-serif;
   --font-mono:'IBM Plex Mono', monospace;
@@ -89,7 +90,7 @@ button{font-family:inherit;}
   display:flex; align-items:center; justify-content:space-between; gap:16px;
   margin-bottom:18px; flex-wrap:wrap;
 }
-.toolbar-left{ display:flex; align-items:center; gap:10px; }
+.toolbar-left{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .btn{
   font-size:13px; font-weight:600; padding:9px 16px; border-radius:8px; cursor:pointer;
   border:1px solid var(--line); background:var(--surface-raised); color:var(--text);
@@ -285,9 +286,9 @@ tbody tr:hover{ background:var(--surface-hover); }
 }
 .drawer h2{ font-family:var(--font-display); font-size:24px; margin:0 0 2px; text-transform:uppercase; }
 .drawer .phone{ font-family:var(--font-mono); color:var(--text-muted); font-size:13px; margin-bottom:16px; }
-.stat-row{ display:flex; gap:10px; margin-bottom:18px; }
+.stat-row{ display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
 .stat-box{
-  flex:1; background:var(--surface-raised); border:1px solid var(--line-soft); border-radius:8px;
+  flex:1 1 110px; min-width:110px; background:var(--surface-raised); border:1px solid var(--line-soft); border-radius:8px;
   padding:10px 12px;
 }
 .stat-box .num{ font-family:var(--font-mono); font-size:18px; font-weight:600; color:var(--ice-soft); }
@@ -484,6 +485,9 @@ textarea.input{ width:100%; resize:vertical; font-family:inherit; line-height:1.
 .chart-legend-swatch.rent{ background:var(--danger); }
 .chart-legend-swatch.chem{ background:var(--ice); }
 .chart-legend-swatch.other{ background:var(--purple); }
+.chart-seg.payroll{ background:var(--pink); }
+.chart-legend-swatch.payroll{ background:var(--pink); }
+.cat-chip.payroll{ background:rgba(244,114,182,.12); color:var(--pink); border:1px solid rgba(244,114,182,.35); }
 .chart-donut-wrap{ display:flex; align-items:center; justify-content:center; padding:14px 0; width:100%; }
 .chart-donut{
   width:100%; max-width:340px; aspect-ratio:1/1; border-radius:50%; position:relative;
@@ -659,6 +663,7 @@ textarea.input{ width:100%; resize:vertical; font-family:inherit; line-height:1.
   .screen{ padding:14px 12px 60px; }
   .burger-btn{ display:inline-flex; align-items:center; justify-content:center; }
   .brand-logo{ height:20px; }
+  #screen-payroll .layout-2col > .panel{ order:-1; }
 
   .nav{
     display:none; position:fixed; top:64px; right:14px; z-index:70;
@@ -1107,6 +1112,7 @@ textarea.input{ width:100%; resize:vertical; font-family:inherit; line-height:1.
       <span class="chart-legend-item"><span class="chart-legend-swatch rent"></span>Аренда</span>
       <span class="chart-legend-item"><span class="chart-legend-swatch chem"></span>Химия</span>
       <span class="chart-legend-item"><span class="chart-legend-swatch other"></span>Непредвиденные</span>
+      <span class="chart-legend-item"><span class="chart-legend-swatch payroll"></span>Зарплата</span>
     </div>
   </div>
 
@@ -1125,7 +1131,8 @@ textarea.input{ width:100%; resize:vertical; font-family:inherit; line-height:1.
   <div class="toolbar">
     <div class="toolbar-left" style="flex-wrap:wrap;">
       <select class="input" id="prPeriodSelect">
-        <option value="all" selected>Всё время</option>
+        <option value="week" selected>Текущая неделя (Пн–Вс)</option>
+        <option value="all">Всё время</option>
         <option value="month">Текущий месяц</option>
         <option value="prevmonth">Прошлый месяц</option>
         <option value="year">Этот год</option>
@@ -3312,8 +3319,12 @@ function renderIncome(){
     .sort((a,b)=> b.start.localeCompare(a.start));
 
   const total = paidBookings.reduce((s,b)=> s+Number(bookingPrice(b)||0), 0);
+  const expenses = totalExpensesInRange(from, to);
+  const net = total - expenses;
   document.getElementById('incSummaryRow').innerHTML = `
     <div class="stat-box"><div class="num" style="color:var(--green);">${total.toLocaleString('ru-RU')} ₽</div><div class="lbl">Доходы за период</div></div>
+    <div class="stat-box"><div class="num" style="color:var(--danger);">${expenses.toLocaleString('ru-RU')} ₽</div><div class="lbl">Расходы за период</div></div>
+    <div class="stat-box"><div class="num" style="color:${net>=0?'var(--green)':'var(--danger)'};">${net.toLocaleString('ru-RU')} ₽</div><div class="lbl">Чистая прибыль</div></div>
     <div class="stat-box"><div class="num">${paidBookings.length}</div><div class="lbl">Оплаченных записей</div></div>
   `;
 
@@ -3390,10 +3401,24 @@ function renderWarehouse(){
   const filtered = state.expenses
     .filter(e=> e.date>=from && e.date<=to)
     .sort((a,b)=> b.date.localeCompare(a.date));
+  const payrollTotal = payrollCommissionInRange(from, to);
+  const payrollRow = payrollTotal ? `<tr>
+      <td>—</td>
+      <td><span class="cat-chip payroll">Зарплата</span></td>
+      <td class="ltv">${payrollTotal.toLocaleString('ru-RU')} ₽</td>
+      <td>Начисления мастерам за период (см. вкладку «Зарплата»)</td>
+      <td><span class="empty-note">—</span></td>
+      <td></td>
+    </tr>` : '';
+  const payrollCard = payrollTotal ? `<div class="record-card">
+      <div class="rc-title"><span class="cat-chip payroll">Зарплата</span></div>
+      <div class="rc-row"><span class="rc-lbl">Сумма</span><span class="rc-val ltv">${payrollTotal.toLocaleString('ru-RU')} ₽</span></div>
+      <div class="rc-note">Начисления мастерам за период (см. вкладку «Зарплата»)</div>
+    </div>` : '';
 
   // ---- table ----
   const tbody = document.getElementById('expensesTbody');
-  tbody.innerHTML = filtered.map(e=>{
+  const expenseRowsHtml = filtered.map(e=>{
     const cat = expCategoryInfo(e.category);
     const extraPhotos = e.photos && e.photos.length>1 ? `<span style="font-size:10px;color:var(--text-dim);margin-left:5px;">+${e.photos.length-1}</span>` : '';
     const thumb = e.photos && e.photos.length ? `<img class="exp-receipt-thumb" src="${e.photos[0].dataUrl}" data-src="${e.photos[0].dataUrl}">${extraPhotos}` : '<span class="empty-note">—</span>';
@@ -3405,7 +3430,8 @@ function renderWarehouse(){
       <td>${thumb}</td>
       <td><button class="row-del" data-del-exp="${e.id}" title="Удалить расход">✕</button></td>
     </tr>`;
-  }).join('') || `<tr><td colspan="6"><span class="empty-note">За выбранный период расходов нет</span></td></tr>`;
+  }).join('');
+  tbody.innerHTML = (payrollRow + expenseRowsHtml) || `<tr><td colspan="6"><span class="empty-note">За выбранный период расходов нет</span></td></tr>`;
 
   tbody.querySelectorAll('tr[data-id]').forEach(tr=>{
     tr.addEventListener('click', (e)=>{
@@ -3433,7 +3459,7 @@ function renderWarehouse(){
 
   // ---- mobile cards ----
   const mobileList = document.getElementById('expensesMobileList');
-  mobileList.innerHTML = filtered.map(e=>{
+  const expenseCardsHtml = filtered.map(e=>{
     const cat = expCategoryInfo(e.category);
     const thumb = e.photos && e.photos.length ? `<img class="rc-photo exp-receipt-thumb" src="${e.photos[0].dataUrl}" data-src="${e.photos[0].dataUrl}">${e.photos.length>1?`<span style="font-size:10px;color:var(--text-dim);margin-left:5px;">+${e.photos.length-1}</span>`:''}` : '<span class="empty-note">—</span>';
     return `<div class="record-card" data-id="${e.id}">
@@ -3446,8 +3472,9 @@ function renderWarehouse(){
         <button class="btn btn-ghost btn-danger" data-del-exp="${e.id}">Удалить</button>
       </div>
     </div>`;
-  }).join('') || `<div class="empty-note">За выбранный период расходов нет</div>`;
-  mobileList.querySelectorAll('.record-card').forEach(card=>{
+  }).join('');
+  mobileList.innerHTML = (payrollCard + expenseCardsHtml) || `<div class="empty-note">За выбранный период расходов нет</div>`;
+  mobileList.querySelectorAll('.record-card[data-id]').forEach(card=>{
     card.addEventListener('click', (e)=>{
       if(e.target.closest('[data-del-exp]') || e.target.closest('img')) return;
       openExpenseModal(card.dataset.id);
@@ -3472,14 +3499,16 @@ function renderWarehouse(){
   });
 
   // ---- summary ----
-  const total = filtered.reduce((s,e)=> s+Number(e.amount||0), 0);
+  const expTotal = filtered.reduce((s,e)=> s+Number(e.amount||0), 0);
   const byCat = {rent:0, chem:0, other:0};
   filtered.forEach(e=>{ byCat[e.category] = (byCat[e.category]||0) + Number(e.amount||0); });
+  const total = expTotal + payrollTotal;
   document.getElementById('expSummaryRow').innerHTML = `
     <div class="stat-box" style="border-color:var(--green);"><div class="num" style="color:var(--green);">${total.toLocaleString('ru-RU')} ₽</div><div class="lbl">Итого за период</div></div>
     <div class="stat-box"><div class="num" style="color:var(--danger);">${byCat.rent.toLocaleString('ru-RU')} ₽</div><div class="lbl">Аренда</div></div>
     <div class="stat-box"><div class="num" style="color:var(--ice);">${byCat.chem.toLocaleString('ru-RU')} ₽</div><div class="lbl">Химия</div></div>
     <div class="stat-box"><div class="num" style="color:var(--purple);">${byCat.other.toLocaleString('ru-RU')} ₽</div><div class="lbl">Непредвиденные</div></div>
+    <div class="stat-box"><div class="num" style="color:var(--pink);">${payrollTotal.toLocaleString('ru-RU')} ₽</div><div class="lbl">Зарплата</div></div>
   `;
 
   // ---- chart: one bar per calendar month covered by [from,to] ----
@@ -3496,16 +3525,23 @@ function renderWarehouse(){
   }
   if(!months.length) months.push(monthKey(from));
 
+  const payrollByMonth = {};
+  payrollEntriesInRange({from, to}).forEach(p=>{
+    const b = state.bookings.find(x=>x.id===p.bookingId);
+    const mk = monthKey(b.start);
+    payrollByMonth[mk] = (payrollByMonth[mk]||0) + Number(p.commission||0);
+  });
+
   const monthTotals = months.map(mk=>{
-    const sums = {rent:0, chem:0, other:0};
+    const sums = {rent:0, chem:0, other:0, payroll:payrollByMonth[mk]||0};
     filtered.forEach(e=>{ if(monthKey(e.date)===mk) sums[e.category] = (sums[e.category]||0) + Number(e.amount||0); });
-    return {mk, sums, total: sums.rent+sums.chem+sums.other};
+    return {mk, sums, total: sums.rent+sums.chem+sums.other+sums.payroll};
   });
   const maxTotal = Math.max(1, ...monthTotals.map(m=>m.total));
 
   chartEl.classList.remove('chart-bars-donut');
 
-  if(!filtered.length){
+  if(!filtered.length && !Object.keys(payrollByMonth).length){
     chartEl.innerHTML = '<div class="chart-empty">Нет данных для отображения за выбранный период</div>';
   } else if(months.length === 1){
     // ---- single calendar month selected: circular donut with month+year in the center ----
@@ -3513,7 +3549,7 @@ function renderWarehouse(){
     const m = monthTotals[0];
     let acc = 0;
     const stops = [];
-    [['rent','var(--danger)'], ['chem','var(--ice)'], ['other','var(--purple)']].forEach(([cat,color])=>{
+    [['rent','var(--danger)'], ['chem','var(--ice)'], ['other','var(--purple)'], ['payroll','var(--pink)']].forEach(([cat,color])=>{
       const p = m.total ? (m.sums[cat]/m.total*100) : 0;
       if(p > 0){
         stops.push(`${color} ${acc}% ${acc+p}%`);
@@ -3538,6 +3574,7 @@ function renderWarehouse(){
       return `<div class="chart-bar-col">
         <div class="chart-bar-total">${m.total ? m.total.toLocaleString('ru-RU') : ''}</div>
         <div class="chart-bar-stack" style="height:${barH}px;">
+          <div class="chart-seg payroll" style="height:${pct('payroll')}%;"></div>
           <div class="chart-seg other" style="height:${pct('other')}%;"></div>
           <div class="chart-seg chem" style="height:${pct('chem')}%;"></div>
           <div class="chart-seg rent" style="height:${pct('rent')}%;"></div>
@@ -3665,6 +3702,7 @@ function renderMastersList(){
         <button class="row-del" data-del-master="${m.id}" title="Удалить мастера">✕</button>
       </div>`).join('');
     box.querySelectorAll('[data-del-master]').forEach(btn=>{
+      btn.classList.toggle('hidden', isRestrictedRole);
       btn.addEventListener('click', ()=>{
         const id = btn.dataset.delMaster;
         const hasEntries = state.payrollEntries.some(p=>p.masterId===id);
@@ -3708,6 +3746,12 @@ document.getElementById('newMasterName').addEventListener('keydown', (e)=>{
 function getPayrollPeriodRange(){
   const type = document.getElementById('prPeriodSelect').value;
   const now = new Date();
+  if(type==='week'){
+    const dow = now.getDay(); // 0=Вс..6=Сб
+    const diffToMonday = dow===0 ? -6 : 1-dow;
+    const monday = fmtISO(new Date(now.getFullYear(), now.getMonth(), now.getDate()+diffToMonday));
+    return {from: monday, to: addDays(monday,6)};
+  }
   if(type==='month'){
     return {from:firstDayOfMonth(now.getFullYear(), now.getMonth()), to:lastDayOfMonth(now.getFullYear(), now.getMonth())};
   }
@@ -3734,19 +3778,12 @@ document.getElementById('prFromDate').addEventListener('change', renderPayrollLi
 document.getElementById('prToDate').addEventListener('change', renderPayrollList);
 
 function renderPayrollList(){
-  const range = getPayrollPeriodRange();
   const tbody = document.getElementById('payrollTbody');
-  let rows = state.payrollEntries.slice().sort((a,b)=>{
+  const rows = payrollEntriesInRange(getPayrollPeriodRange()).sort((a,b)=>{
     const ba = state.bookings.find(x=>x.id===a.bookingId);
     const bb = state.bookings.find(x=>x.id===b.bookingId);
     return (bb?.start||'').localeCompare(ba?.start||'');
   });
-  if(range){
-    rows = rows.filter(p=>{
-      const b = state.bookings.find(x=>x.id===p.bookingId);
-      return b && b.start>=range.from && b.start<=range.to;
-    });
-  }
   tbody.innerHTML = rows.map(p=>{
     const b = state.bookings.find(x=>x.id===p.bookingId);
     const info = b ? findClientCar(b.carId) : null;
@@ -3764,6 +3801,7 @@ function renderPayrollList(){
   }).join('') || `<tr><td colspan="7"><span class="empty-note">Начислений пока нет</span></td></tr>`;
 
   tbody.querySelectorAll('[data-del-payroll]').forEach(btn=>{
+    btn.classList.toggle('hidden', isRestrictedRole);
     btn.addEventListener('click', (e)=>{
       e.stopPropagation();
       if(!confirm('Удалить это начисление безвозвратно?')) return;
@@ -3794,6 +3832,7 @@ function renderPayrollList(){
     </div>`;
   }).join('') || `<div class="empty-note">Начислений пока нет</div>`;
   mobileList.querySelectorAll('[data-del-payroll]').forEach(btn=>{
+    btn.classList.toggle('hidden', isRestrictedRole);
     btn.addEventListener('click', (e)=>{
       e.stopPropagation();
       if(!confirm('Удалить это начисление безвозвратно?')) return;
@@ -3808,12 +3847,30 @@ function renderPayrollList(){
   renderPayrollSummary();
 }
 
+function payrollEntriesInRange(range){
+  if(!range) return state.payrollEntries.slice();
+  return state.payrollEntries.filter(p=>{
+    const b = state.bookings.find(x=>x.id===p.bookingId);
+    return b && b.start>=range.from && b.start<=range.to;
+  });
+}
+function payrollCommissionInRange(from, to){
+  return payrollEntriesInRange({from, to}).reduce((s,p)=> s+Number(p.commission||0), 0);
+}
+function totalExpensesInRange(from, to){
+  const expensesSum = state.expenses.filter(e=> e.date>=from && e.date<=to).reduce((s,e)=> s+Number(e.amount||0), 0);
+  return expensesSum + payrollCommissionInRange(from, to);
+}
 function renderPayrollSummary(){
-  const total = state.payrollEntries.reduce((s,p)=> s+Number(p.commission||0), 0);
-  const totalAmount = state.payrollEntries.reduce((s,p)=> s+Number(p.amount||0), 0);
+  const entries = payrollEntriesInRange(getPayrollPeriodRange());
+  const total = entries.reduce((s,p)=> s+Number(p.commission||0), 0);
+  const perMaster = state.masters
+    .map(m=>({m, total: entries.filter(p=>p.masterId===m.id).reduce((s,p)=> s+Number(p.commission||0), 0), count: entries.filter(p=>p.masterId===m.id).length}))
+    .filter(x=> x.count>0);
   document.getElementById('payrollSummaryRow').innerHTML = `
-    <div class="stat-box"><div class="num">${state.payrollEntries.length}</div><div class="lbl">Начислений всего</div></div>
+    <div class="stat-box"><div class="num">${entries.length}</div><div class="lbl">Начислений за период</div></div>
     <div class="stat-box"><div class="num" style="color:var(--green);">${total.toLocaleString('ru-RU')} ₽</div><div class="lbl">Итого к выплате</div></div>
+    ${perMaster.map(x=>`<div class="stat-box"><div class="num" style="color:var(--green);">${x.total.toLocaleString('ru-RU')} ₽</div><div class="lbl">${escapeHtml(x.m.name)}</div></div>`).join('')}
   `;
 }
 
@@ -3973,12 +4030,16 @@ function scheduleSheetsExport(){
 const MASTER_EMAILS = ['master@mail.ru'];
 let isRestrictedRole = false;
 
+const MASTER_ALLOWED_SCREENS = ['board','inspections','payroll'];
 function applyRoleRestrictions(){
   document.querySelectorAll('.nav button').forEach(btn=>{
-    const allowed = !isRestrictedRole || btn.dataset.screen==='board' || btn.dataset.screen==='inspections';
+    const allowed = !isRestrictedRole || MASTER_ALLOWED_SCREENS.includes(btn.dataset.screen);
     btn.classList.toggle('hidden', !allowed);
   });
   document.getElementById('newBookingBtn').classList.toggle('hidden', isRestrictedRole);
+  document.getElementById('newPayrollBtn').classList.toggle('hidden', isRestrictedRole);
+  document.getElementById('addMasterBtn').classList.toggle('hidden', isRestrictedRole);
+  document.getElementById('newMasterName').classList.toggle('hidden', isRestrictedRole);
 }
 
 auth.onAuthStateChanged(async user=>{
