@@ -1056,11 +1056,9 @@ textarea.input{ width:100%; resize:vertical; font-family:inherit; line-height:1.
   <div class="toolbar">
     <div class="toolbar-left" style="flex-wrap:wrap;">
       <select class="input" id="incPeriodSelect">
-        <option value="7days" selected>Последние 7 дней</option>
-        <option value="month">Текущий месяц</option>
+        <option value="week" selected>Текущая неделя (Пн–Вс)</option>
+        <option value="prevweek">Прошлая неделя</option>
         <option value="prevmonth">Прошлый месяц</option>
-        <option value="year">Этот год</option>
-        <option value="all">Всё время</option>
         <option value="custom">Свой период</option>
       </select>
       <div class="field-row" id="incCustomRangeRow" style="display:none;gap:8px;margin:0;">
@@ -1090,10 +1088,9 @@ textarea.input{ width:100%; resize:vertical; font-family:inherit; line-height:1.
   <div class="toolbar">
     <div class="toolbar-left" style="flex-wrap:wrap;">
       <select class="input" id="expPeriodSelect">
-        <option value="month">Текущий месяц</option>
+        <option value="week" selected>Текущая неделя (Пн–Вс)</option>
+        <option value="prevweek">Прошлая неделя</option>
         <option value="prevmonth">Прошлый месяц</option>
-        <option value="year">Этот год</option>
-        <option value="all">Всё время</option>
         <option value="custom">Свой период</option>
       </select>
       <div class="field-row" id="expCustomRangeRow" style="display:none;gap:8px;margin:0;">
@@ -1132,6 +1129,7 @@ textarea.input{ width:100%; resize:vertical; font-family:inherit; line-height:1.
     <div class="toolbar-left" style="flex-wrap:wrap;">
       <select class="input" id="prPeriodSelect">
         <option value="week" selected>Текущая неделя (Пн–Вс)</option>
+        <option value="prevweek">Прошлая неделя</option>
         <option value="all">Всё время</option>
         <option value="month">Текущий месяц</option>
         <option value="prevmonth">Прошлый месяц</option>
@@ -1486,6 +1484,15 @@ function daysBetween(a,b){
   const [by,bm,bd] = b.split('-').map(Number);
   return Math.round((new Date(by,bm-1,bd) - new Date(ay,am-1,ad))/86400000);
 }
+// Monday-Sunday range for the current week (offsetWeeks=0) or a week offset
+// from it (-1 = last week, 1 = next week).
+function weekRange(offsetWeeks){
+  const now = new Date();
+  const dow = now.getDay(); // 0=Вс..6=Сб
+  const diffToMonday = (dow===0 ? -6 : 1-dow) + (offsetWeeks||0)*7;
+  const monday = fmtISO(new Date(now.getFullYear(), now.getMonth(), now.getDate()+diffToMonday));
+  return {from: monday, to: addDays(monday,6)};
+}
 function firstDayOfMonth(y,m){ return fmtISO(new Date(y,m,1)); }
 function lastDayOfMonth(y,m){ return fmtISO(new Date(y,m+1,0)); }
 function firstDayOfMonthISO(iso){
@@ -1666,6 +1673,11 @@ function bookingServiceNames(b){
 }
 function totalDuration(b){
   return Math.max(1, Number(b.duration)||1);
+}
+// The date work on a booking actually finishes — used to attribute income/payroll
+// to the week it was completed, not the week the car was dropped off.
+function bookingEndDate(b){
+  return addDays(b.start, totalDuration(b)-1);
 }
 function bookingAddonNames(b){
   return (b.addons||[]).map(id=> ADDONS.find(a=>a.id===id)?.name || id).filter(Boolean);
@@ -3289,23 +3301,16 @@ document.getElementById('sigConfirm').addEventListener('click', ()=>{
 function getIncomePeriodRange(){
   const type = document.getElementById('incPeriodSelect').value;
   const now = new Date();
-  if(type==='7days'){
-    return {from: addDays(todayISO(), -6), to: todayISO()};
+  if(type==='week'){
+    return weekRange(0);
   }
-  if(type==='month'){
-    return {from:firstDayOfMonth(now.getFullYear(), now.getMonth()), to:lastDayOfMonth(now.getFullYear(), now.getMonth())};
+  if(type==='prevweek'){
+    return weekRange(-1);
   }
   if(type==='prevmonth'){
     const py = now.getMonth()===0 ? now.getFullYear()-1 : now.getFullYear();
     const pm = now.getMonth()===0 ? 11 : now.getMonth()-1;
     return {from:firstDayOfMonth(py, pm), to:lastDayOfMonth(py, pm)};
-  }
-  if(type==='year'){
-    return {from:`${now.getFullYear()}-01-01`, to:`${now.getFullYear()}-12-31`};
-  }
-  if(type==='all'){
-    const dates = state.bookings.map(b=>b.start).sort();
-    return {from: dates.length ? dates[0] : todayISO(), to: todayISO()};
   }
   const from = document.getElementById('incFromDate').value || todayISO();
   const to = document.getElementById('incToDate').value || todayISO();
@@ -3315,8 +3320,8 @@ function getIncomePeriodRange(){
 function renderIncome(){
   const {from, to} = getIncomePeriodRange();
   const paidBookings = state.bookings
-    .filter(b=> b.paid && b.status!=='cancelled' && b.start>=from && b.start<=to)
-    .sort((a,b)=> b.start.localeCompare(a.start));
+    .filter(b=> b.paid && b.status!=='cancelled' && bookingEndDate(b)>=from && bookingEndDate(b)<=to)
+    .sort((a,b)=> bookingEndDate(b).localeCompare(bookingEndDate(a)));
 
   const total = paidBookings.reduce((s,b)=> s+Number(bookingPrice(b)||0), 0);
   const expenses = totalExpensesInRange(from, to);
@@ -3332,7 +3337,7 @@ function renderIncome(){
   tbody.innerHTML = paidBookings.map(b=>{
     const info = findClientCar(b.carId);
     return `<tr>
-      <td>${new Date(b.start+'T00:00:00').toLocaleDateString('ru-RU')}</td>
+      <td>${new Date(bookingEndDate(b)+'T00:00:00').toLocaleDateString('ru-RU')}</td>
       <td>${info?escapeHtml(info.client.name):'—'}</td>
       <td>${info?escapeHtml(info.car.model):'—'}</td>
       <td>${bookingServiceNames(b)}</td>
@@ -3345,7 +3350,7 @@ function renderIncome(){
     const info = findClientCar(b.carId);
     return `<div class="record-card">
       <div class="rc-title">${info?escapeHtml(info.client.name):'—'}</div>
-      <div class="rc-row"><span class="rc-lbl">Дата</span><span class="rc-val">${new Date(b.start+'T00:00:00').toLocaleDateString('ru-RU')}</span></div>
+      <div class="rc-row"><span class="rc-lbl">Дата</span><span class="rc-val">${new Date(bookingEndDate(b)+'T00:00:00').toLocaleDateString('ru-RU')}</span></div>
       <div class="rc-row"><span class="rc-lbl">Авто</span><span class="rc-val">${info?escapeHtml(info.car.model):'—'}</span></div>
       <div class="rc-row"><span class="rc-lbl">Услуги</span><span class="rc-val">${bookingServiceNames(b)}</span></div>
       <div class="rc-row"><span class="rc-lbl">Сумма</span><span class="rc-val ltv">${Number(bookingPrice(b)||0).toLocaleString('ru-RU')} ₽</span></div>
@@ -3376,20 +3381,16 @@ let expDraftPhotos = [];
 function getExpensePeriodRange(){
   const type = document.getElementById('expPeriodSelect').value;
   const now = new Date();
-  if(type==='month'){
-    return {from:firstDayOfMonth(now.getFullYear(), now.getMonth()), to:lastDayOfMonth(now.getFullYear(), now.getMonth())};
+  if(type==='week'){
+    return weekRange(0);
+  }
+  if(type==='prevweek'){
+    return weekRange(-1);
   }
   if(type==='prevmonth'){
     const py = now.getMonth()===0 ? now.getFullYear()-1 : now.getFullYear();
     const pm = now.getMonth()===0 ? 11 : now.getMonth()-1;
     return {from:firstDayOfMonth(py, pm), to:lastDayOfMonth(py, pm)};
-  }
-  if(type==='year'){
-    return {from:`${now.getFullYear()}-01-01`, to:`${now.getFullYear()}-12-31`};
-  }
-  if(type==='all'){
-    const dates = state.expenses.map(e=>e.date).sort();
-    return {from: dates.length ? dates[0] : todayISO(), to: todayISO()};
   }
   const from = document.getElementById('expFromDate').value || todayISO();
   const to = document.getElementById('expToDate').value || todayISO();
@@ -3528,7 +3529,7 @@ function renderWarehouse(){
   const payrollByMonth = {};
   payrollEntriesInRange({from, to}).forEach(p=>{
     const b = state.bookings.find(x=>x.id===p.bookingId);
-    const mk = monthKey(b.start);
+    const mk = monthKey(bookingEndDate(b));
     payrollByMonth[mk] = (payrollByMonth[mk]||0) + Number(p.commission||0);
   });
 
@@ -3747,10 +3748,10 @@ function getPayrollPeriodRange(){
   const type = document.getElementById('prPeriodSelect').value;
   const now = new Date();
   if(type==='week'){
-    const dow = now.getDay(); // 0=Вс..6=Сб
-    const diffToMonday = dow===0 ? -6 : 1-dow;
-    const monday = fmtISO(new Date(now.getFullYear(), now.getMonth(), now.getDate()+diffToMonday));
-    return {from: monday, to: addDays(monday,6)};
+    return weekRange(0);
+  }
+  if(type==='prevweek'){
+    return weekRange(-1);
   }
   if(type==='month'){
     return {from:firstDayOfMonth(now.getFullYear(), now.getMonth()), to:lastDayOfMonth(now.getFullYear(), now.getMonth())};
@@ -3782,7 +3783,7 @@ function renderPayrollList(){
   const rows = payrollEntriesInRange(getPayrollPeriodRange()).sort((a,b)=>{
     const ba = state.bookings.find(x=>x.id===a.bookingId);
     const bb = state.bookings.find(x=>x.id===b.bookingId);
-    return (bb?.start||'').localeCompare(ba?.start||'');
+    return (bb?bookingEndDate(bb):'').localeCompare(ba?bookingEndDate(ba):'');
   });
   tbody.innerHTML = rows.map(p=>{
     const b = state.bookings.find(x=>x.id===p.bookingId);
@@ -3790,7 +3791,7 @@ function renderPayrollList(){
     const m = master(p.masterId);
     const s = svc(p.serviceId);
     return `<tr data-id="${p.id}">
-      <td>${b ? new Date(b.start+'T00:00:00').toLocaleDateString('ru-RU') : '—'}</td>
+      <td>${b ? new Date(bookingEndDate(b)+'T00:00:00').toLocaleDateString('ru-RU') : '—'}</td>
       <td>${m ? escapeHtml(m.name) : '<span class="empty-note">мастер удалён</span>'}</td>
       <td>${info ? info.client.name+' · '+info.car.model : '—'}</td>
       <td>${s ? s.name : (p.serviceId||'—')}</td>
@@ -3821,7 +3822,7 @@ function renderPayrollList(){
     const s = svc(p.serviceId);
     return `<div class="record-card" data-id="${p.id}">
       <div class="rc-title">${m ? escapeHtml(m.name) : 'мастер удалён'}</div>
-      <div class="rc-row"><span class="rc-lbl">Дата</span><span class="rc-val">${b ? new Date(b.start+'T00:00:00').toLocaleDateString('ru-RU') : '—'}</span></div>
+      <div class="rc-row"><span class="rc-lbl">Дата</span><span class="rc-val">${b ? new Date(bookingEndDate(b)+'T00:00:00').toLocaleDateString('ru-RU') : '—'}</span></div>
       <div class="rc-row"><span class="rc-lbl">Клиент / Авто</span><span class="rc-val">${info ? escapeHtml(info.client.name+' · '+info.car.model) : '—'}</span></div>
       <div class="rc-row"><span class="rc-lbl">Услуга</span><span class="rc-val">${s ? escapeHtml(s.name) : (p.serviceId||'—')}</span></div>
       <div class="rc-row"><span class="rc-lbl">Сумма</span><span class="rc-val ltv">${Number(p.amount||0).toLocaleString('ru-RU')} ₽</span></div>
@@ -3851,7 +3852,9 @@ function payrollEntriesInRange(range){
   if(!range) return state.payrollEntries.slice();
   return state.payrollEntries.filter(p=>{
     const b = state.bookings.find(x=>x.id===p.bookingId);
-    return b && b.start>=range.from && b.start<=range.to;
+    if(!b) return false;
+    const end = bookingEndDate(b);
+    return end>=range.from && end<=range.to;
   });
 }
 function payrollCommissionInRange(from, to){
