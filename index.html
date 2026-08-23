@@ -812,6 +812,7 @@ textarea.input{ width:100%; resize:vertical; font-family:inherit; line-height:1.
       <div class="toolbar-left" style="flex-wrap:wrap;">
         <select class="input" id="mListPeriodSelect">
           <option value="7days" selected>Ближайшие 7 дней</option>
+          <option value="week">Текущая неделя (Пн–Вс)</option>
           <option value="month">Текущий месяц</option>
           <option value="year">Этот год</option>
           <option value="all">Все записи</option>
@@ -1641,7 +1642,11 @@ function saveState(){
     knownRev = newRev;
   }).catch(e=>{
     if(e && e.message === 'STALE_WRITE'){
-      showToast('Данные изменились в другом месте — перезагрузите страницу (Cmd+R) и повторите действие', 'danger');
+      // A toast alone is too easy to miss — this failed save means the user's
+      // last change was never written to Firestore, so force it into view and
+      // reload immediately rather than let them keep working on stale data.
+      alert('Не удалось сохранить: данные были изменены в другом месте (другая вкладка/устройство).\n\nВаше последнее действие НЕ сохранилось — после нажатия ОК страница обновится, повторите его ещё раз.');
+      location.reload();
     } else {
       console.error('saveState failed', e);
     }
@@ -2061,6 +2066,9 @@ function getMobileListPeriodRange(){
   const now = new Date();
   if(type==='7days'){
     return {from: todayISO(), to: addDays(todayISO(), 6)};
+  }
+  if(type==='week'){
+    return weekRange(0);
   }
   if(type==='month'){
     return {from:firstDayOfMonth(now.getFullYear(), now.getMonth()), to:lastDayOfMonth(now.getFullYear(), now.getMonth())};
