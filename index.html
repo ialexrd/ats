@@ -1629,8 +1629,13 @@ async function loadState(){
   knownRev = 1;
   return seeded;
 }
+// Returns a promise that resolves to true once the write is confirmed
+// persisted to Firestore, or false if it failed — callers should await this
+// before treating an action as "saved" (closing a modal, showing a success
+// toast), so closing the tab right after never races an in-flight write.
 function saveState(){
-  db.runTransaction(async tx=>{
+  scheduleSheetsExport();
+  return db.runTransaction(async tx=>{
     const snap = await tx.get(stateDocRef);
     const serverRev = snap.exists ? (snap.data()._rev || 0) : 0;
     if(knownRev !== null && serverRev !== knownRev){
@@ -1640,7 +1645,7 @@ function saveState(){
     state._rev = newRev;
     tx.set(stateDocRef, state);
     knownRev = newRev;
-  }).catch(e=>{
+  }).then(()=> true).catch(e=>{
     if(e && e.message === 'STALE_WRITE'){
       // A toast alone is too easy to miss — this failed save means the user's
       // last change was never written to Firestore, so force it into view and
@@ -1649,9 +1654,10 @@ function saveState(){
       location.reload();
     } else {
       console.error('saveState failed', e);
+      alert('Не удалось сохранить изменения — проверьте интернет-соединение и попробуйте ещё раз. Не закрывайте вкладку и не выключайте устройство, пока не увидите подтверждение.');
     }
+    return false;
   });
-  scheduleSheetsExport();
 }
 
 let state = null;
@@ -2180,7 +2186,7 @@ function renderBookingList(){
   tbody.querySelectorAll('tr[data-id]').forEach(tr=> tr.addEventListener('click', ()=> openBookingDetail(tr.dataset.id)));
 }
 
-function moveBooking(bookingId, newPostId, newStartIso){
+async function moveBooking(bookingId, newPostId, newStartIso){
   const b = state.bookings.find(x=>x.id===bookingId);
   if(!b) return;
   const dur = totalDuration(b);
@@ -2192,7 +2198,7 @@ function moveBooking(bookingId, newPostId, newStartIso){
   }
   b.postId = newPostId;
   b.start = newStartIso;
-  saveState();
+  if(!await saveState()) return;
   refreshBoard();
   showToast('Запись перенесена', 'success');
 }
@@ -2443,7 +2449,7 @@ function openBookingModal(prefillClientId, prefillServiceId){
   bkModal.classList.add('open');
 }
 
-document.getElementById('bkSave').addEventListener('click', ()=>{
+document.getElementById('bkSave').addEventListener('click', async ()=>{
   const clientSel = document.getElementById('bkClient').value;
   const phone = document.getElementById('bkPhone').value.trim();
   const serviceIds = getSelectedServiceIds();
@@ -2507,7 +2513,7 @@ document.getElementById('bkSave').addEventListener('click', ()=>{
     notes,
     status:'scheduled', paid:false
   });
-  saveState();
+  if(!await saveState()) return;
   bkModal.classList.remove('open');
   refreshBoard();
   renderClients();
@@ -2610,12 +2616,12 @@ function openBookingDetail(bookingId){
       <div class="what">Фото, чек-лист и схема повреждений для этого авто ещё не заполнены</div>
       <button class="btn btn-primary" id="bdMakeInspection">Оформить приёмку</button>
     `;
-    document.getElementById('bdMakeInspection').addEventListener('click', ()=>{
+    document.getElementById('bdMakeInspection').addEventListener('click', async ()=>{
       const newInsp = {id:'i'+Date.now(), clientId:b.clientId, carId:b.carId, bookingId:b.id, date:todayISO(),
         mileage:'', fuel:50, valuables:'', wheels:{FL:'ok',FR:'ok',RL:'ok',RR:'ok'},
         damage:[], photos:[], status:'draft', signedAt:null, signature:null};
       state.inspections.push(newInsp);
-      saveState();
+      if(!await saveState()) return;
       bdOverlay.classList.remove('open');
       showScreen('inspections');
       openInspectionEditor(newInsp.id);
@@ -2642,7 +2648,7 @@ document.getElementById('bdOpenClient').addEventListener('click', ()=>{
   if(!isRestrictedRole) showScreen('clients');
   openClientDrawer(b.clientId);
 });
-document.getElementById('bdSave').addEventListener('click', ()=>{
+document.getElementById('bdSave').addEventListener('click', async ()=>{
   const b = state.bookings.find(x=>x.id===currentBookingDetailId);
   if(!b) return;
   const newServices = getBdSelectedServiceIds();
@@ -2665,13 +2671,13 @@ document.getElementById('bdSave').addEventListener('click', ()=>{
   b.paid = document.getElementById('bdPaid').checked;
   b.source = document.getElementById('bdSource').value.trim();
   b.notes = document.getElementById('bdNotes').value.trim();
-  saveState();
+  if(!await saveState()) return;
   bdOverlay.classList.remove('open');
   refreshBoard();
   renderClients();
   showToast('Запись обновлена', 'success');
 });
-function cancelBookingWithReason(bookingId){
+async function cancelBookingWithReason(bookingId){
   const b = state.bookings.find(x=>x.id===bookingId);
   if(!b) return false;
   const reason = prompt('Укажите причину отмены записи:');
@@ -2680,16 +2686,16 @@ function cancelBookingWithReason(bookingId){
   b.status = 'cancelled';
   b.cancelReason = reason.trim();
   b.paid = false; // cancelled bookings never count towards LTV
-  saveState();
+  if(!await saveState()) return false;
   refreshBoard();
   renderClients();
   renderCancelledList();
   showToast('Запись отменена', 'success');
   return true;
 }
-document.getElementById('bdCancelBooking').addEventListener('click', ()=>{
+document.getElementById('bdCancelBooking').addEventListener('click', async ()=>{
   if(!currentBookingDetailId) return;
-  if(cancelBookingWithReason(currentBookingDetailId)) bdOverlay.classList.remove('open');
+  if(await cancelBookingWithReason(currentBookingDetailId)) bdOverlay.classList.remove('open');
 });
 bdOverlay.addEventListener('click', e=>{ if(e.target===bdOverlay) bdOverlay.classList.remove('open'); });
 
@@ -2718,10 +2724,10 @@ function renderCancelledList(){
   }).join('') || `<tr><td colspan="9"><span class="empty-note">Отменённых записей пока нет</span></td></tr>`;
 
   tbody.querySelectorAll('button[data-restore]').forEach(btn=> btn.addEventListener('click', ()=> openRestoreModal(btn.dataset.restore)));
-  tbody.querySelectorAll('button[data-del-booking]').forEach(btn=> btn.addEventListener('click', ()=>{
+  tbody.querySelectorAll('button[data-del-booking]').forEach(btn=> btn.addEventListener('click', async ()=>{
     if(!confirm('Удалить эту запись навсегда?')) return;
     state.bookings = state.bookings.filter(x=>x.id!==btn.dataset.delBooking);
-    saveState();
+    if(!await saveState()) return;
     renderCancelledList();
     showToast('Запись удалена', 'success');
   }));
@@ -2744,10 +2750,10 @@ function renderCancelledList(){
     </div>`;
   }).join('') || `<div class="empty-note">Отменённых записей пока нет</div>`;
   mobileList.querySelectorAll('button[data-restore]').forEach(btn=> btn.addEventListener('click', ()=> openRestoreModal(btn.dataset.restore)));
-  mobileList.querySelectorAll('button[data-del-booking]').forEach(btn=> btn.addEventListener('click', ()=>{
+  mobileList.querySelectorAll('button[data-del-booking]').forEach(btn=> btn.addEventListener('click', async ()=>{
     if(!confirm('Удалить эту запись навсегда?')) return;
     state.bookings = state.bookings.filter(x=>x.id!==btn.dataset.delBooking);
-    saveState();
+    if(!await saveState()) return;
     renderCancelledList();
     showToast('Запись удалена', 'success');
   }));
@@ -2764,7 +2770,7 @@ function openRestoreModal(bookingId){
   restoreModal.classList.add('open');
 }
 document.getElementById('rsCancel').addEventListener('click', ()=> restoreModal.classList.remove('open'));
-document.getElementById('rsConfirm').addEventListener('click', ()=>{
+document.getElementById('rsConfirm').addEventListener('click', async ()=>{
   const b = state.bookings.find(x=>x.id===restoreBookingId);
   if(!b) return;
   const newDate = document.getElementById('rsDate').value;
@@ -2780,7 +2786,7 @@ document.getElementById('rsConfirm').addEventListener('click', ()=>{
   b.start = newDate;
   b.startTime = newTime;
   b.cancelReason = null;
-  saveState();
+  if(!await saveState()) return;
   restoreModal.classList.remove('open');
   renderCancelledList();
   refreshBoard();
@@ -2910,11 +2916,11 @@ function renderReminders(){
       btn.addEventListener('click', (e)=>{ e.stopPropagation(); copyToClipboard(btn.dataset.copyPhone); });
     });
     list.querySelectorAll('[data-dismiss-key]').forEach(btn=>{
-      btn.addEventListener('click', (e)=>{
+      btn.addEventListener('click', async (e)=>{
         e.stopPropagation();
         const key = btn.dataset.dismissKey;
         if(!state.dismissedReminders.includes(key)) state.dismissedReminders.push(key);
-        saveState();
+        if(!await saveState()) return;
         renderReminders();
         showToast('Напоминание скрыто', 'success');
       });
@@ -2962,12 +2968,12 @@ function openClientDrawer(clientId){
     <button class="btn btn-ghost btn-danger${isRestrictedRole?' hidden':''}" id="drawerDeleteClient" style="width:100%;margin-top:18px;">Удалить клиента</button>
   `;
   document.getElementById('drawerCloseBtn').addEventListener('click', ()=> drawerOverlay.classList.remove('open'));
-  document.getElementById('drawerDeleteClient').addEventListener('click', ()=>{
+  document.getElementById('drawerDeleteClient').addEventListener('click', async ()=>{
     if(!confirm(`Удалить клиента «${c.name}» вместе с историей записей и приёмок? Это действие необратимо.`)) return;
     state.clients = state.clients.filter(x=>x.id!==c.id);
     state.bookings = state.bookings.filter(b=>b.clientId!==c.id);
     state.inspections = state.inspections.filter(i=>i.clientId!==c.id);
-    saveState();
+    if(!await saveState()) return;
     drawerOverlay.classList.remove('open');
     renderClients();
     refreshBoard();
@@ -3002,11 +3008,11 @@ function renderInspectionsList(){
     </tr>`;
   }).join('') || `<tr><td colspan="7"><span class="empty-note">Приёмок пока нет</span></td></tr>`;
   tbody.querySelectorAll('tr[data-id]').forEach(tr=> tr.addEventListener('click', ()=> openInspectionEditor(tr.dataset.id)));
-  tbody.querySelectorAll('button[data-del-insp]').forEach(btn=> btn.addEventListener('click', (e)=>{
+  tbody.querySelectorAll('button[data-del-insp]').forEach(btn=> btn.addEventListener('click', async (e)=>{
     e.stopPropagation();
     if(!confirm('Удалить эту приёмку без возможности восстановления?')) return;
     state.inspections = state.inspections.filter(i=>i.id!==btn.dataset.delInsp);
-    saveState();
+    if(!await saveState()) return;
     renderInspectionsList();
     refreshBoard();
     showToast('Приёмка удалена', 'success');
@@ -3033,11 +3039,11 @@ function renderInspectionsList(){
       openInspectionEditor(card.dataset.id);
     });
   });
-  mobileList.querySelectorAll('button[data-del-insp]').forEach(btn=> btn.addEventListener('click', (e)=>{
+  mobileList.querySelectorAll('button[data-del-insp]').forEach(btn=> btn.addEventListener('click', async (e)=>{
     e.stopPropagation();
     if(!confirm('Удалить эту приёмку без возможности восстановления?')) return;
     state.inspections = state.inspections.filter(i=>i.id!==btn.dataset.delInsp);
-    saveState();
+    if(!await saveState()) return;
     renderInspectionsList();
     refreshBoard();
     showToast('Приёмка удалена', 'success');
@@ -3056,7 +3062,7 @@ document.getElementById('newInspectionBtn').addEventListener('click', ()=>{
 });
 document.getElementById('inClient').addEventListener('change', fillInspectionCarOptions);
 document.getElementById('inCancel').addEventListener('click', ()=> inspModal.classList.remove('open'));
-document.getElementById('inStart').addEventListener('click', ()=>{
+document.getElementById('inStart').addEventListener('click', async ()=>{
   const clientId = document.getElementById('inClient').value;
   const carId = document.getElementById('inCar').value;
   if(!clientId || !carId){ showToast('Выберите клиента и авто', 'danger'); return; }
@@ -3064,7 +3070,7 @@ document.getElementById('inStart').addEventListener('click', ()=>{
     mileage:'', fuel:50, valuables:'', wheels:{FL:'ok',FR:'ok',RL:'ok',RR:'ok'},
     damage:[], photos:[], status:'draft', signedAt:null, signature:null};
   state.inspections.push(insp);
-  saveState();
+  if(!await saveState()) return;
   inspModal.classList.remove('open');
   openInspectionEditor(insp.id);
 });
@@ -3072,10 +3078,10 @@ inspModal.addEventListener('click', e=>{ if(e.target===inspModal) inspModal.clas
 
 document.getElementById('backToInspections').addEventListener('click', ()=> showScreen('inspections'));
 document.getElementById('printActBtn').addEventListener('click', ()=> window.print());
-document.getElementById('deleteInspectionBtn').addEventListener('click', ()=>{
+document.getElementById('deleteInspectionBtn').addEventListener('click', async ()=>{
   if(!confirm('Удалить эту приёмку без возможности восстановления?')) return;
   state.inspections = state.inspections.filter(i=>i.id!==currentInspectionId);
-  saveState();
+  if(!await saveState()) return;
   refreshBoard();
   showScreen('inspections');
   showToast('Приёмка удалена', 'success');
@@ -3152,10 +3158,10 @@ function renderDamageMarkers(){
     const g = document.createElementNS('http://www.w3.org/2000/svg','g');
     g.setAttribute('class','dmg-marker');
     g.innerHTML = `<circle cx="${d.x}" cy="${d.y}" r="11" fill="${type.color}" stroke="#0d1b1e" stroke-width="1.5"></circle><text class="num" x="${d.x}" y="${d.y+4}" text-anchor="middle">${idx+1}</text>`;
-    g.addEventListener('click', (e)=>{
+    g.addEventListener('click', async (e)=>{
       e.stopPropagation();
       const note = prompt('Комментарий к отметке №'+(idx+1)+' ('+type.label+'):', d.note||'');
-      if(note !== null){ d.note = note; saveState(); renderDamageMarkers(); }
+      if(note !== null){ d.note = note; if(!await saveState()) return; renderDamageMarkers(); }
     });
     layer.appendChild(g);
   });
@@ -3172,18 +3178,18 @@ function renderDamageList(){
       <button data-del="${d.id}" class="no-print">✕</button>
     </div>`;
   }).join('') || '<div class="empty-note">Отметок пока нет — кликните по схеме кузова</div>';
-  list.querySelectorAll('button[data-del]').forEach(b=> b.addEventListener('click', ()=>{
+  list.querySelectorAll('button[data-del]').forEach(b=> b.addEventListener('click', async ()=>{
     insp.damage = insp.damage.filter(d=>d.id!==b.dataset.del);
-    saveState();
+    if(!await saveState()) return;
     renderDamageMarkers();
   }));
 }
-document.getElementById('carSvg').addEventListener('click', (e)=>{
+document.getElementById('carSvg').addEventListener('click', async (e)=>{
   const insp = inspection(currentInspectionId);
   if(!insp) return;
   const p = svgPoint(document.getElementById('carSvg'), e);
   insp.damage.push({id:'d'+Date.now(), type:activeDamageType, x:Math.round(p.x), y:Math.round(p.y), note:''});
-  saveState();
+  if(!await saveState()) return;
   renderDamageMarkers();
 });
 
@@ -3201,10 +3207,10 @@ function renderPhotoGrid(){
     document.getElementById('lightboxImg').src = img.dataset.src;
     document.getElementById('lightboxOverlay').classList.add('open');
   }));
-  grid.querySelectorAll('.rm').forEach(btn=> btn.addEventListener('click', (e)=>{
+  grid.querySelectorAll('.rm').forEach(btn=> btn.addEventListener('click', async (e)=>{
     e.stopPropagation();
     insp.photos = insp.photos.filter(p=>p.id!==btn.dataset.id);
-    saveState();
+    if(!await saveState()) return;
     renderPhotoGrid();
   }));
 }
@@ -3216,7 +3222,7 @@ document.getElementById('photoInput').addEventListener('change', (e)=>{
     const reader = new FileReader();
     reader.onload = (ev)=>{
       const img = new Image();
-      img.onload = ()=>{
+      img.onload = async ()=>{
         const maxW = 900;
         const scale = Math.min(1, maxW/img.width);
         const w = Math.round(img.width*scale), h = Math.round(img.height*scale);
@@ -3225,7 +3231,7 @@ document.getElementById('photoInput').addEventListener('change', (e)=>{
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.72);
         insp.photos.push({id:'p'+Date.now()+Math.random().toString(36).slice(2,6), dataUrl});
-        saveState();
+        if(!await saveState()) return;
         renderPhotoGrid();
       };
       img.src = ev.target.result;
@@ -3236,7 +3242,7 @@ document.getElementById('photoInput').addEventListener('change', (e)=>{
 });
 
 /* ---- checklist save ---- */
-document.getElementById('saveInspectionBtn').addEventListener('click', ()=>{
+document.getElementById('saveInspectionBtn').addEventListener('click', async ()=>{
   const insp = inspection(currentInspectionId);
   if(!insp) return;
   insp.mileage = document.getElementById('chkMileage').value;
@@ -3248,7 +3254,7 @@ document.getElementById('saveInspectionBtn').addEventListener('click', ()=>{
     RL: document.getElementById('wheelRL').value,
     RR: document.getElementById('wheelRR').value,
   };
-  saveState();
+  if(!await saveState()) return;
   showToast('Приёмка сохранена', 'success');
 });
 
@@ -3290,7 +3296,7 @@ document.getElementById('sigClear').addEventListener('click', ()=>{
   sigCtx.clearRect(0,0,sigCanvasEl.width, sigCanvasEl.height);
   sigHasContent = false;
 });
-document.getElementById('sigConfirm').addEventListener('click', ()=>{
+document.getElementById('sigConfirm').addEventListener('click', async ()=>{
   const insp = inspection(currentInspectionId);
   if(!insp) return;
   if(!sigHasContent && !insp.signature){ showToast('Попросите клиента расписаться в поле выше', 'danger'); return; }
@@ -3298,7 +3304,7 @@ document.getElementById('sigConfirm').addEventListener('click', ()=>{
   if(sigHasContent) insp.signature = sigCanvasEl.toDataURL('image/png');
   insp.status = 'signed';
   insp.signedAt = todayISO();
-  saveState();
+  if(!await saveState()) return;
   renderInspectionEditor();
   showToast('Акт подписан', 'success');
 });
@@ -3456,11 +3462,11 @@ function renderWarehouse(){
     });
   });
   tbody.querySelectorAll('[data-del-exp]').forEach(btn=>{
-    btn.addEventListener('click', (e)=>{
+    btn.addEventListener('click', async (e)=>{
       e.stopPropagation();
       if(!confirm('Удалить этот расход безвозвратно?')) return;
       state.expenses = state.expenses.filter(x=>x.id!==btn.dataset.delExp);
-      saveState();
+      if(!await saveState()) return;
       renderWarehouse();
       showToast('Расход удалён', 'success');
     });
@@ -3497,11 +3503,11 @@ function renderWarehouse(){
     });
   });
   mobileList.querySelectorAll('[data-del-exp]').forEach(btn=>{
-    btn.addEventListener('click', (e)=>{
+    btn.addEventListener('click', async (e)=>{
       e.stopPropagation();
       if(!confirm('Удалить этот расход безвозвратно?')) return;
       state.expenses = state.expenses.filter(x=>x.id!==btn.dataset.delExp);
-      saveState();
+      if(!await saveState()) return;
       renderWarehouse();
       showToast('Расход удалён', 'success');
     });
@@ -3660,7 +3666,7 @@ document.getElementById('expPhotoInput').addEventListener('change', (e)=>{
   e.target.value = '';
 });
 
-document.getElementById('expSave').addEventListener('click', ()=>{
+document.getElementById('expSave').addEventListener('click', async ()=>{
   const date = document.getElementById('expDate').value;
   const category = document.getElementById('expCategory').value;
   const amount = Number(document.getElementById('expAmount').value);
@@ -3673,16 +3679,16 @@ document.getElementById('expSave').addEventListener('click', ()=>{
   } else {
     state.expenses.push({id:'exp'+Date.now()+Math.random().toString(36).slice(2,6), date, category, amount, note, photos:expDraftPhotos});
   }
-  saveState();
+  if(!await saveState()) return;
   document.getElementById('expenseModalOverlay').classList.remove('open');
   renderWarehouse();
   showToast(currentExpenseId ? 'Расход обновлён' : 'Расход добавлен', 'success');
 });
-document.getElementById('expDelete').addEventListener('click', ()=>{
+document.getElementById('expDelete').addEventListener('click', async ()=>{
   if(!currentExpenseId) return;
   if(!confirm('Удалить этот расход безвозвратно?')) return;
   state.expenses = state.expenses.filter(x=>x.id!==currentExpenseId);
-  saveState();
+  if(!await saveState()) return;
   document.getElementById('expenseModalOverlay').classList.remove('open');
   renderWarehouse();
   showToast('Расход удалён', 'success');
@@ -3712,7 +3718,7 @@ function renderMastersList(){
       </div>`).join('');
     box.querySelectorAll('[data-del-master]').forEach(btn=>{
       btn.classList.toggle('hidden', isRestrictedRole);
-      btn.addEventListener('click', ()=>{
+      btn.addEventListener('click', async ()=>{
         const id = btn.dataset.delMaster;
         const hasEntries = state.payrollEntries.some(p=>p.masterId===id);
         const msg = hasEntries
@@ -3721,7 +3727,7 @@ function renderMastersList(){
         if(!confirm(msg)) return;
         state.masters = state.masters.filter(m=>m.id!==id);
         state.payrollEntries = state.payrollEntries.filter(p=>p.masterId!==id);
-        saveState();
+        if(!await saveState()) return;
         renderPayrollScreen();
         showToast('Мастер удалён', 'success');
       });
@@ -3737,12 +3743,12 @@ function renderMastersList(){
     if(state.masters.some(m=>m.id===prevValue)) sel.value = prevValue;
   }
 }
-document.getElementById('addMasterBtn').addEventListener('click', ()=>{
+document.getElementById('addMasterBtn').addEventListener('click', async ()=>{
   const input = document.getElementById('newMasterName');
   const name = input.value.trim();
   if(!name){ showToast('Введите имя мастера', 'danger'); return; }
   state.masters.push({id:'m'+Date.now()+Math.random().toString(36).slice(2,6), name});
-  saveState();
+  if(!await saveState()) return;
   input.value = '';
   renderPayrollScreen();
   showToast('Мастер добавлен', 'success');
@@ -3811,11 +3817,11 @@ function renderPayrollList(){
 
   tbody.querySelectorAll('[data-del-payroll]').forEach(btn=>{
     btn.classList.toggle('hidden', isRestrictedRole);
-    btn.addEventListener('click', (e)=>{
+    btn.addEventListener('click', async (e)=>{
       e.stopPropagation();
       if(!confirm('Удалить это начисление безвозвратно?')) return;
       state.payrollEntries = state.payrollEntries.filter(x=>x.id!==btn.dataset.delPayroll);
-      saveState();
+      if(!await saveState()) return;
       renderPayrollList();
       renderPayrollSummary();
       showToast('Начисление удалено', 'success');
@@ -3842,11 +3848,11 @@ function renderPayrollList(){
   }).join('') || `<div class="empty-note">Начислений пока нет</div>`;
   mobileList.querySelectorAll('[data-del-payroll]').forEach(btn=>{
     btn.classList.toggle('hidden', isRestrictedRole);
-    btn.addEventListener('click', (e)=>{
+    btn.addEventListener('click', async (e)=>{
       e.stopPropagation();
       if(!confirm('Удалить это начисление безвозвратно?')) return;
       state.payrollEntries = state.payrollEntries.filter(x=>x.id!==btn.dataset.delPayroll);
-      saveState();
+      if(!await saveState()) return;
       renderPayrollList();
       renderPayrollSummary();
       showToast('Начисление удалено', 'success');
@@ -3933,7 +3939,7 @@ document.getElementById('prCancel').addEventListener('click', ()=> document.getE
 document.getElementById('prBooking').addEventListener('change', (e)=> populatePrServiceSelect(e.target.value));
 document.getElementById('prAmount').addEventListener('input', updatePrCommissionPreview);
 
-document.getElementById('prSave').addEventListener('click', ()=>{
+document.getElementById('prSave').addEventListener('click', async ()=>{
   const masterId = document.getElementById('prMaster').value;
   const bookingId = document.getElementById('prBooking').value;
   const serviceId = document.getElementById('prService').value;
@@ -3944,7 +3950,7 @@ document.getElementById('prSave').addEventListener('click', ()=>{
   if(!amount || amount<=0){ showToast('Укажите сумму за услугу', 'danger'); return; }
   const commission = Math.round(amount*MASTER_COMMISSION_RATE);
   state.payrollEntries.push({id:'pr'+Date.now()+Math.random().toString(36).slice(2,6), masterId, bookingId, serviceId, amount, commission});
-  saveState();
+  if(!await saveState()) return;
   document.getElementById('payrollModalOverlay').classList.remove('open');
   renderPayrollList();
   showToast('Зарплата начислена', 'success');
